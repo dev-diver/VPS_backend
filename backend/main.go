@@ -9,18 +9,20 @@ import (
 func main() {
 
 	app := fiber.New()
-	database.InitDB()
-	database.DBConn.AutoMigrate(
-		&models.Company{},
-		&models.Member{},
-		&models.MemberAdmin{},
-		&models.NotificationMember{},
-		&models.Group{},
-		&models.GivenVacation{},
-		&models.ApplyVacation{},
-		&models.VacationPlan{},
-		&models.Notification{},
-	)
+	db, err := database.InitDB()
+	if err != nil {
+		db.AutoMigrate(
+			&models.Company{},
+			&models.Member{},
+			&models.MemberAdmin{},
+			&models.NotificationMember{},
+			&models.Group{},
+			&models.GivenVacation{},
+			&models.ApplyVacation{},
+			&models.VacationPlan{},
+			&models.Notification{},
+		)
+	}
 
 	app.Get("/", func(c *fiber.Ctx) error {
 		return c.SendString("Hello, World!")
