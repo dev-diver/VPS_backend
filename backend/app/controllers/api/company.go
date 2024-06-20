@@ -19,16 +19,6 @@ func CreateCompanyHandler(db *database.Database) fiber.Handler {
 	}
 }
 
-func DeleteCompanyHandler(db *database.Database) fiber.Handler {
-	return func(c *fiber.Ctx) error {
-		id := c.Params("companyID")
-		if err := db.DB.Delete(&models.Company{}, id).Error; err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
-		}
-		return c.SendStatus(fiber.StatusNoContent)
-	}
-}
-
 func GetCompanyHandler(db *database.Database) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		id := c.Params("companyID")
@@ -54,5 +44,15 @@ func UpdateCompanyHandler(db *database.Database) fiber.Handler {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 		}
 		return c.JSON(company)
+	}
+}
+
+func DeleteCompanyHandler(db *database.Database) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		id := c.Params("companyID")
+		if err := db.DB.Delete(&models.Company{}, id).Error; err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		}
+		return c.SendStatus(fiber.StatusNoContent)
 	}
 }

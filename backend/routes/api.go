@@ -28,11 +28,6 @@ func registerCompanies(apiRouter fiber.Router, db *database.Database) {
 	company.Post("/", api.UpdateCompanyHandler(db))
 	company.Delete("/", api.DeleteCompanyHandler(db))
 
-	vacations := company.Group("/vacations")
-	vacations.Get("/period/:year/:month?", api.GetVacationsByYearMonthHandler(db))
-	vacations.Post("/:vacationID/promotion", api.PromoteVacationHandler(db))
-	vacations.Get("/promotions", api.GetPromotionsHandler(db))
-
 	members := company.Group("/members")
 	members.Get("/", api.GetMembersHandler(db))
 	members.Get("/search", api.SearchMembersHandler(db)) // keyword
@@ -50,6 +45,11 @@ func registerCompanies(apiRouter fiber.Router, db *database.Database) {
 	group.Post("/", api.UpdateGroupHandler(db))
 	group.Delete("/", api.DeleteGroupHandler(db))
 	group.Put("/members", api.UpdateGroupMembersHandler(db)) // member key
+
+	vacations := company.Group("/vacations")
+	vacations.Get("/period/:year/:month?", api.GetVacationsByYearMonthHandler(db))
+	vacations.Post("/:vacationID/promotion", api.PromoteVacationHandler(db))
+	vacations.Get("/promotions", api.GetPromotionsHandler(db))
 }
 
 func registerMembers(apiRouter fiber.Router, db *database.Database) {
