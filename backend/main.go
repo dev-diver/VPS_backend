@@ -3,6 +3,7 @@ package main
 import (
 	"cywell.com/vacation-promotion/app/models"
 	"cywell.com/vacation-promotion/database"
+	"cywell.com/vacation-promotion/routes"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -23,6 +24,9 @@ func main() {
 			&models.Notification{},
 		)
 	}
+
+	api := app.Group("/api")
+	routes.RegisterAPI(api, db)
 
 	app.Get("/", func(c *fiber.Ctx) error {
 		return c.SendString("Hello, World!")

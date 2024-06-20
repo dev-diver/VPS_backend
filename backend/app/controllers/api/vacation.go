@@ -62,14 +62,14 @@ func RejectVacationHandler(db *database.Database) fiber.Handler {
 	}
 }
 
-func GetMemberVacationsHandler(db *database.Database) fiber.Handler {
+func GetVacationsByYearMonthHandler(db *database.Database) fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		memberID := c.Params("memberID")
+		companyID := c.Params("companyID")
 		year := c.Params("year")
 		month := c.Params("month")
 		var vacations []models.GivenVacation
 
-		query := db.DB.Where("member_id = ? AND year = ?", memberID, year)
+		query := db.DB.Where("company_id = ? AND year = ?", companyID, year)
 		if month != "" {
 			query = query.Where("MONTH(generate_date) = ?", month)
 		}
@@ -78,5 +78,58 @@ func GetMemberVacationsHandler(db *database.Database) fiber.Handler {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 		}
 		return c.JSON(vacations)
+	}
+}
+
+func UpdateVacationHandler(db *database.Database) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		id := c.Params("vacationID")
+		var vacation models.GivenVacation
+		if err := db.DB.First(&vacation, id).Error; err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		}
+		if err := c.BodyParser(&vacation); err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+		}
+		if err := db.DB.Save(&vacation).Error; err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		}
+		return c.JSON(vacation)
+	}
+}
+
+func DeleteVacationHandler(db *database.Database) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		id := c.Params("vacationID")
+		if err := db.DB.Delete(&models.GivenVacation{}, id).Error; err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		}
+		return c.SendStatus(fiber.StatusNoContent)
+	}
+}
+
+func PromoteVacationHandler(db *database.Database) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		id := c.Params("vacationID")
+		var vacation models.GivenVacation
+		if err := db.DB.First(&vacation, id).Error; err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		}
+		vacation.VacationPromotionStateID = 2 // Assuming 2 is the ID for the promotion state
+		if err := db.DB.Save(&vacation).Error; err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		}
+		return c.JSON(vacation)
+	}
+}
+
+func GetPromotionsHandler(db *database.Database) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		companyID := c.Params("companyID")
+		var promotions []models.GivenVacation
+		if err := db.DB.Where("company_id = ? AND vacation_promotion_state_id = ?", companyID, 2).Find(&promotions).Error; err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		}
+		return c.JSON(promotions)
 	}
 }

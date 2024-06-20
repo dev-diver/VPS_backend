@@ -10,7 +10,7 @@ func RegisterAPI(apiRouter fiber.Router, db *database.Database) {
 	registerAuth(apiRouter, db)
 	registerCompanies(apiRouter, db)
 	registerMembers(apiRouter, db)
-	registerGroups(apiRouter, db)
+	registerVacations(apiRouter, db)
 }
 
 func registerAuth(apiRouter fiber.Router, db *database.Database) {
@@ -30,9 +30,6 @@ func registerCompanies(apiRouter fiber.Router, db *database.Database) {
 
 	vacations := company.Group("/vacations")
 	vacations.Get("/period/:year/:month?", api.GetVacationsByYearMonthHandler(db))
-	vacations.Post("/:vacationID", api.CreateVacationHandler(db))
-	vacations.Put("/:vacationID", api.UpdateVacationHandler(db))
-	vacations.Delete("/:vacationID", api.DeleteVacationHandler(db))
 	vacations.Post("/:vacationID/promotion", api.PromoteVacationHandler(db))
 	vacations.Get("/promotions", api.GetPromotionsHandler(db))
 
@@ -49,6 +46,7 @@ func registerCompanies(apiRouter fiber.Router, db *database.Database) {
 	groups.Get("/", api.GetGroupsHandler(db))
 	groups.Post("/", api.CreateGroupHandler(db))
 	group := groups.Group("/:groupID")
+	group.Get("/", api.GetGroupHandler(db))
 	group.Post("/", api.UpdateGroupHandler(db))
 	group.Delete("/", api.DeleteGroupHandler(db))
 	group.Put("/members", api.UpdateGroupMembersHandler(db)) // member key
@@ -58,12 +56,7 @@ func registerMembers(apiRouter fiber.Router, db *database.Database) {
 	member := apiRouter.Group("/members/:memberID")
 	vacations := member.Group("/vacations")
 	vacations.Post("/", api.ApplyVacationHandler(db))
-	vacation := vacations.Group("/:vacationID")
-	vacation.Post("/", api.UpdateVacationHandler(db))
-	vacation.Delete("/", api.CancelVacationHandler(db))
-	vacation.Post("/approve", api.ApproveVacationHandler(db))
-	vacation.Post("/reject", api.RejectVacationHandler(db))
-	vacations.Get("/period/:year/:month?", api.GetMemberVacationsHandler(db))
+	vacations.Get("/period/:year/:month?", api.GetVacationsByYearMonthHandler(db))
 
 	notifications := member.Group("/notifications")
 	notifications.Get("/", api.GetAllNotificationsHandler(db))
@@ -71,15 +64,11 @@ func registerMembers(apiRouter fiber.Router, db *database.Database) {
 	notifications.Post("/:notificationID/approve", api.ApproveNotificationHandler(db))
 }
 
-func registerGroups(apiRouter fiber.Router, db *database.Database) {
-	groups := apiRouter.Group("/groups")
-	groups.Post("/", api.CreateGroupHandler(db))
-	group := groups.Group("/:groupID")
-	group.Get("/", api.GetGroupHandler(db))
-	group.Put("/", api.UpdateGroupHandler(db))
-	members := group.Group("/members")
-	members.Post("/", api.AddGroupMembersHandler(db)) // memberId[]
-	member := members.Group("/:memberID")
-	member.Delete("/", api.DeleteGroupMemberHandler(db))
-	group.Delete("/", api.DeleteGroupHandler(db))
+func registerVacations(apiRouter fiber.Router, db *database.Database) {
+	vacations := apiRouter.Group("/vacations")
+	vacation := vacations.Group("/:vacationID")
+	vacation.Post("/", api.UpdateVacationHandler(db))
+	vacation.Delete("/", api.CancelVacationHandler(db))
+	vacation.Post("/approve", api.ApproveVacationHandler(db))
+	vacation.Post("/reject", api.RejectVacationHandler(db))
 }
