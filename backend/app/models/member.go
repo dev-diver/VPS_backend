@@ -12,7 +12,7 @@ type Member struct {
 	HireDate            time.Time
 	RetireDate          *time.Time
 	IsActive            bool
-	Admin               []*Company            `gorm:"many2many:member_admin"`
+	Admin               []*Company            `gorm:"many2many:member_admins"`
 	GivenVacations      []GivenVacation       `gorm:"foreignKey:MemberID"`
 	ApplyVacations      []ApplyVacation       `gorm:"foreignKey:MemberID"`
 	Groups              []*Group              `gorm:"many2many:group_members"`
