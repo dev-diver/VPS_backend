@@ -19,7 +19,7 @@ func CreateCompanyHandler(db *database.Database) fiber.Handler {
 	}
 }
 
-func DeleteCompaniesHandler(db *database.Database) fiber.Handler {
+func DeleteCompanyHandler(db *database.Database) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		id := c.Params("companyID")
 		if err := db.DB.Delete(&models.Company{}, id).Error; err != nil {

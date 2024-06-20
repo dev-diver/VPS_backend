@@ -22,11 +22,11 @@ func registerAuth(apiRouter fiber.Router, db *database.Database) {
 func registerCompanies(apiRouter fiber.Router, db *database.Database) {
 	companies := apiRouter.Group("/companies")
 	companies.Post("/", api.CreateCompanyHandler(db))
-	companies.Delete("/", api.DeleteCompaniesHandler(db))
 
 	company := companies.Group("/:companyID")
 	company.Get("/", api.GetCompanyHandler(db))
 	company.Post("/", api.UpdateCompanyHandler(db))
+	company.Delete("/", api.DeleteCompanyHandler(db))
 
 	vacations := company.Group("/vacations")
 	vacations.Get("/period/:year/:month?", api.GetVacationsByYearMonthHandler(db))
