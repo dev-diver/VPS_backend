@@ -8,6 +8,7 @@ import (
 	"cywell.com/vacation-promotion/database"
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
+	"gorm.io/gorm"
 )
 
 func CreateGroupHandler(db *database.Database) fiber.Handler {
@@ -63,39 +64,99 @@ func CreateGroupHandler(db *database.Database) fiber.Handler {
 func GetGroupHandler(db *database.Database) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		groupID := c.Params("groupID")
-		var group dto.GroupDTO
-		if err := db.DB.Preload("Members").First(&group, groupID).Error; err != nil {
+		var group models.Group
+		if err := db.DB.Preload("Members").First(&group, "id = ?", groupID).Error; err != nil {
+			if err == gorm.ErrRecordNotFound {
+				return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Group not found"})
+			}
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 		}
-		return c.JSON(group)
+
+		// GroupDTO로 변환합니다.
+		groupDTO := dto.GroupDTO{
+			ID:        group.ID,
+			CompanyID: group.CompanyID,
+			Name:      group.Name,
+			Color:     group.Color,
+			Priority:  group.Priority,
+			Members:   group.Members,
+		}
+		return c.JSON(groupDTO)
 	}
 }
 
 func GetGroupsHandler(db *database.Database) fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		companyID := c.Params("companyID")
-		var groups []dto.GroupDTO
-		if err := db.DB.Preload("Members").Where("company_id = ?", companyID).Find(&groups).Error; err != nil {
+		var groups []models.Group
+		if err := db.DB.Preload("Members").Find(&groups).Error; err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 		}
-		return c.JSON(groups)
+
+		// Groups를 GroupDTO로 변환합니다.
+		var groupDTOs []dto.GroupDTO
+		for _, group := range groups {
+			groupDTO := dto.GroupDTO{
+				ID:        group.ID,
+				CompanyID: group.CompanyID,
+				Name:      group.Name,
+				Color:     group.Color,
+				Priority:  group.Priority,
+				Members:   group.Members,
+			}
+			groupDTOs = append(groupDTOs, groupDTO)
+		}
+
+		return c.JSON(groupDTOs)
 	}
 }
 
 func UpdateGroupHandler(db *database.Database) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		id := c.Params("groupID")
+
+		// 기존 그룹을 로드
 		var group models.Group
-		if err := db.DB.First(&group, id).Error; err != nil {
+		if err := db.DB.First(&group, "id = ?", id).Error; err != nil {
+			if err == gorm.ErrRecordNotFound {
+				return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Group not found"})
+			}
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 		}
-		if err := c.BodyParser(&group); err != nil {
+
+		// 요청 바디 파싱
+		var updateGroupDTO dto.CreateGroupDTO
+		if err := c.BodyParser(&updateGroupDTO); err != nil {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 		}
+
+		// 유효성 검사
+		validate := validator.New()
+		if err := validate.Struct(&updateGroupDTO); err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+		}
+		// DTO의 데이터를 기존 그룹에 덮어쓰기.
+		group.Name = updateGroupDTO.Name
+		group.Color = updateGroupDTO.Color
+		if updateGroupDTO.Priority != nil {
+			group.Priority = *updateGroupDTO.Priority
+		}
+
+		// 변경된 내용을 저장
 		if err := db.DB.Save(&group).Error; err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 		}
-		return c.JSON(group)
+
+		// GroupDTO로 변환
+		groupDTO := dto.GroupDTO{
+			ID:        group.ID,
+			CompanyID: group.CompanyID,
+			Name:      group.Name,
+			Color:     group.Color,
+			Priority:  group.Priority,
+			Members:   group.Members,
+		}
+
+		return c.JSON(groupDTO)
 	}
 }
 
