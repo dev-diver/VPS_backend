@@ -85,8 +85,8 @@ func SearchMembersHandler(db *database.Database) fiber.Handler {
 func GetMemberProfileHandler(db *database.Database) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		id := c.Params("memberID")
-		var member models.Member
-		if err := db.DB.First(&member, id).Error; err != nil {
+		var member dto.MemberDTO
+		if err := db.DB.Table("members").First(&member, id).Error; err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 		}
 		return c.JSON(member)
