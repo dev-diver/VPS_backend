@@ -178,15 +178,35 @@ func UpdateGroupMembersHandler(db *database.Database) fiber.Handler {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 		}
 
-		var members []models.Member
-		if err := c.BodyParser(&members); err != nil {
+		var memberIDs []uint
+		if err := c.BodyParser(&memberIDs); err != nil {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 		}
 
+		// 멤버 ID 배열을 통해 멤버를 조회
+		var members []models.Member
+		if err := db.DB.Where("id IN ?", memberIDs).Find(&members).Error; err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		}
+
+		// 그룹과 멤버 간의 관계를 업데이트
 		if err := db.DB.Model(&group).Association("Members").Replace(&members); err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 		}
 
-		return c.JSON(group)
+		// 멤버 정보를 MemberDTO로 변환
+		var memberDTOs []dto.MemberDTO
+		for _, member := range members {
+			memberDTO := dto.MemberDTO{
+				ID:       member.ID,
+				Name:     member.Name,
+				Email:    member.Email,
+				HireDate: member.HireDate,
+				IsActive: member.IsActive,
+			}
+			memberDTOs = append(memberDTOs, memberDTO)
+		}
+
+		return c.JSON(memberDTOs)
 	}
 }
