@@ -126,6 +126,7 @@ func MigrateAndSeed(db *database.Database) error {
 		{ID: enums.VacationProcessStateApplied, TypeName: "신청"},
 		{ID: enums.VacationProcessStateFirstApproved, TypeName: "1차 승인"},
 		{ID: enums.VacationProcessStateFinalApproved, TypeName: "최종 승인"},
+		{ID: enums.VacationProcessStateRejected, TypeName: "반려"},
 	}
 	for _, vps := range vacationProcessStates {
 		db.FirstOrCreate(&vps, models.VacationProcessState{ID: vps.ID})

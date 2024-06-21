@@ -34,11 +34,12 @@ const (
 	VacationProcessStateApplied       = 1
 	VacationProcessStateFirstApproved = 2
 	VacationProcessStateFinalApproved = 3
+	VacationProcessStateRejected      = 4
 
 	//휴가 취소 상태
-	VacationCancelStateRequested = 1
-	VacationCancelStateCompleted = 2
-	VacationCancelStateDefault   = 3
+	VacationCancelStateDefault   = 1
+	VacationCancelStateRequested = 2
+	VacationCancelStateCompleted = 3
 
 	//알림 타입
 	NotificationTypeNormal                        = 1
