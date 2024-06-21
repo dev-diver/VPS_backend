@@ -43,7 +43,8 @@ func registerCompanies(apiRouter fiber.Router, db *database.Database) {
 	groups.Post("/", api.CreateGroupHandler(db))
 
 	vacations := company.Group("/vacations")
-	vacations.Get("/period", api.GetVacationsByPeriodHandler(db))
+	vacations.Get("/", api.GetVacationsByPeriodHandler(db))
+	vacations.Get("/plans", api.GetVacationsByPeriodHandler(db))
 	vacations.Get("/promotions", api.GetPromotionsHandler(db)) //촉진현황 가져오기
 }
 
@@ -53,15 +54,18 @@ func registerGroups(apiRouter fiber.Router, db *database.Database) {
 	group.Post("/", api.UpdateGroupHandler(db))
 	group.Delete("/", api.DeleteGroupHandler(db))
 	group.Put("/members", api.UpdateGroupMembersHandler(db))
-	group.Get("/vacations/period", api.GetVacationsByPeriodHandler(db))
+
+	vacations := group.Group("/vacations")
+	vacations.Get("/", api.GetVacationsByPeriodHandler(db))
+	vacations.Get("/plans", api.GetVacationPlansByPeriodHandler(db))
 }
 
 func registerMembers(apiRouter fiber.Router, db *database.Database) {
 	member := apiRouter.Group("/members/:memberID")
 	vacations := member.Group("/vacations")
+	vacations.Get("/", api.GetVacationsByPeriodHandler(db))
 	vacations.Post("/plans", api.CreateVacationPlanHandler(db))
-	vacations.Get("/plans", api.GetVacationPlansHandler(db))
-	vacations.Get("/period", api.GetVacationsByPeriodHandler(db))
+	vacations.Get("/plans", api.GetVacationPlansByPeriodHandler(db))
 
 	notifications := member.Group("/notifications")
 	notifications.Get("/", api.GetAllNotificationsHandler(db))

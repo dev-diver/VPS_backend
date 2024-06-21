@@ -124,7 +124,7 @@ func GetVacationsByPeriodHandler(db *database.Database) fiber.Handler {
 	}
 }
 
-func GetVacationPlansHandler(db *database.Database) fiber.Handler {
+func GetVacationPlansByPeriodHandler(db *database.Database) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		return c.SendStatus(fiber.StatusNotImplemented)
 	}
