@@ -87,8 +87,12 @@ func GetGroupHandler(db *database.Database) fiber.Handler {
 
 func GetGroupsHandler(db *database.Database) fiber.Handler {
 	return func(c *fiber.Ctx) error {
+		companyID, err := strconv.ParseUint(c.Params("companyID"), 10, 32)
+		if err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid company ID"})
+		}
 		var groups []models.Group
-		if err := db.DB.Preload("Members").Find(&groups).Error; err != nil {
+		if err := db.DB.Where("company_id = ?", companyID).Find(&groups).Error; err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 		}
 
