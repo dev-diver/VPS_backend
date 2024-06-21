@@ -12,7 +12,7 @@ type CreateVacationPlanRequest struct {
 // VacationRequest DTO for vacation details
 type VacationRequest struct {
 	StartDate time.Time `json:"start_date"`
-	EndDate   time.Time `json:"end_date"`
+	EndDate   time.Time `json:"end_date"` //TODO: start_date보다 크게
 	HalfFirst bool      `json:"half_first"`
 	HalfLast  bool      `json:"half_last"`
 }

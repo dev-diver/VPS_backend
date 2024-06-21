@@ -12,6 +12,6 @@ type VacationPlan struct {
 	VacationProcessStateID uint                 `gorm:"index"`
 	VacationProcessState   VacationProcessState `gorm:"foreignKey:VacationProcessStateID"`
 	VacationCancelStateID  uint                 `gorm:"index"`
-	VacationCancelState    VacationCancelState  `gorm:"foreignKey:VacationCacncelStateID"`
+	VacationCancelState    VacationCancelState  `gorm:"foreignKey:VacationCancelStateID"`
 	ApplyVacations         []ApplyVacation      `gorm:"foreignKey:VacationPlanID"`
 }
