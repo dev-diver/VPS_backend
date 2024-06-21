@@ -51,7 +51,18 @@ func CreateMembersHandler(db *database.Database) fiber.Handler {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 		}
 
-		return c.Status(fiber.StatusCreated).JSON(members)
+		//memberResponse 로 member를 변환
+		var memberResponses []dto.MemberResponse
+		for _, member := range members {
+			memberResponses = append(memberResponses, dto.MemberResponse{
+				ID:       member.ID,
+				Name:     member.Name,
+				Email:    member.Email,
+				HireDate: member.HireDate,
+				IsActive: member.IsActive,
+			})
+		}
+		return c.Status(fiber.StatusCreated).JSON(memberResponses)
 	}
 }
 
