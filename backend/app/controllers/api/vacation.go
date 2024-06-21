@@ -143,19 +143,21 @@ func GetVacationPlansByPeriodHandler(db *database.Database) fiber.Handler {
 		}
 
 		var vacationPlans []models.VacationPlan
-		query := db.DB.Preload("ApplyVacations.Member").
-			Preload("Member").
-			Joins("JOIN apply_vacations ON apply_vacations.vacation_plan_id = vacation_plans.id").
-			Joins("JOIN members ON members.id = vacation_plans.member_id").
-			Where("apply_vacations.start_date <= ? AND apply_vacations.end_date >= ?", endDate, startDate)
+		query := db.DB.Preload("ApplyVacations", "start_date <= ? AND end_date >= ?", endDate, startDate).
+			Preload("ApplyVacations.Member")
 
 		if companyID != 0 {
-			query = query.Where("members.company_id = ?", companyID)
+			query = query.Joins("JOIN members ON members.id = vacation_plans.member_id").
+				Where("members.company_id = ?", companyID).
+				Preload("Member", "company_id = ?", companyID)
 		} else if groupID != 0 {
 			query = query.Joins("JOIN group_members ON group_members.member_id = vacation_plans.member_id").
-				Where("group_members.group_id = ?", groupID)
+				Joins("JOIN members ON members.id = group_members.member_id").
+				Where("group_members.group_id = ?", groupID).
+				Preload("Member", "id IN (SELECT member_id FROM group_members WHERE group_id = ?)", groupID)
 		} else if memberID != 0 {
-			query = query.Where("vacation_plans.member_id = ?", memberID)
+			query = query.Where("vacation_plans.member_id = ?", memberID).
+				Preload("Member")
 		}
 
 		if err := query.Find(&vacationPlans).Error; err != nil {
