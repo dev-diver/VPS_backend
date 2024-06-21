@@ -29,7 +29,7 @@ type VacationEditRequest struct {
 	EndDate   time.Time `json:"end_date"`
 	HalfFirst bool      `json:"half_first"`
 	HalfLast  bool      `json:"half_last"`
-	Status    string    `json:"status"`
+	Status    string    `json:"process_state"`
 }
 
 // ApproveVacationPlanRequest DTO for approving a vacation plan
@@ -57,8 +57,8 @@ type ApplyVacationResponse struct {
 	EndDate      time.Time `json:"end_date"`
 	HalfFirst    bool      `json:"half_first"`
 	HalfLast     bool      `json:"half_last"`
-	Status       uint      `json:"status"`
-	CancelStatus uint      `json:"cancel_status"`
+	Status       uint      `json:"process_state"`
+	CancelStatus uint      `json:"cancel_state"`
 }
 
 type ApplyVacationCardResponse struct {
@@ -69,6 +69,6 @@ type ApplyVacationCardResponse struct {
 	EndDate      time.Time `json:"end_date"`
 	HalfFirst    bool      `json:"half_first"`
 	HalfLast     bool      `json:"half_last"`
-	Status       uint      `json:"status"`
-	CancelStatus uint      `json:"cancel_status"`
+	Status       uint      `json:"process_state"`
+	CancelStatus uint      `json:"cancel_state"`
 }
