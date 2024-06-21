@@ -23,7 +23,7 @@ func GetCompanyHandler(db *database.Database) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		id := c.Params("companyID")
 		var company models.Company
-		if err := db.DB.Preload("Members").Preload("Groups").First(&company, id).Error; err != nil {
+		if err := db.DB.Preload("VacationGenerateType").First(&company, id).Error; err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 		}
 		return c.JSON(company)
@@ -34,7 +34,7 @@ func UpdateCompanyHandler(db *database.Database) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		id := c.Params("companyID")
 		var company models.Company
-		if err := db.DB.First(&company, id).Error; err != nil {
+		if err := db.DB.Preload("VacationGenerateType").First(&company, id).Error; err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 		}
 		if err := c.BodyParser(&company); err != nil {
