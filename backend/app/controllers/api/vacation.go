@@ -90,7 +90,7 @@ func GetVacationsByPeriodHandler(db *database.Database) fiber.Handler {
 		}
 
 		var vacations []models.ApplyVacation
-		query := db.DB.Model(&models.ApplyVacation{})
+		query := db.DB.Preload("Member")
 
 		if companyID != 0 {
 			query = query.Joins("JOIN members ON members.id = apply_vacations.member_id").Where("members.company_id = ?", companyID)
@@ -108,10 +108,12 @@ func GetVacationsByPeriodHandler(db *database.Database) fiber.Handler {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 		}
 
-		vacationsResponse := make([]dto.ApplyVacationResponse, 0)
+		vacationsResponse := make([]dto.ApplyVacationCardResponse, 0)
 		for _, vacation := range vacations {
-			vacationsResponse = append(vacationsResponse, dto.ApplyVacationResponse{
+			vacationsResponse = append(vacationsResponse, dto.ApplyVacationCardResponse{
 				ID:           vacation.ID,
+				MemberID:     vacation.MemberID,
+				MemberName:   vacation.Member.Name,
 				StartDate:    vacation.StartDate,
 				EndDate:      vacation.EndDate,
 				HalfFirst:    vacation.HalfFirst,
@@ -126,7 +128,77 @@ func GetVacationsByPeriodHandler(db *database.Database) fiber.Handler {
 
 func GetVacationPlansByPeriodHandler(db *database.Database) fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		return c.SendStatus(fiber.StatusNotImplemented)
+		companyID, groupID, memberID, year, month, err := parseParams(c)
+		if err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+		}
+
+		var startDate, endDate time.Time
+		if month != 0 {
+			startDate = time.Date(year, time.Month(month), 1, 0, 0, 0, 0, time.UTC)
+			endDate = startDate.AddDate(0, 1, -1)
+		} else {
+			startDate = time.Date(year, 1, 1, 0, 0, 0, 0, time.UTC)
+			endDate = startDate.AddDate(1, 0, -1)
+		}
+
+		var vacationPlans []models.VacationPlan
+		query := db.DB.Preload("ApplyVacations.Member").
+			Preload("Member").
+			Joins("JOIN apply_vacations ON apply_vacations.vacation_plan_id = vacation_plans.id").
+			Joins("JOIN members ON members.id = vacation_plans.member_id").
+			Where("apply_vacations.start_date <= ? AND apply_vacations.end_date >= ?", endDate, startDate)
+
+		if companyID != 0 {
+			query = query.Where("members.company_id = ?", companyID)
+		} else if groupID != 0 {
+			query = query.Joins("JOIN group_members ON group_members.member_id = vacation_plans.member_id").
+				Where("group_members.group_id = ?", groupID)
+		} else if memberID != 0 {
+			query = query.Where("vacation_plans.member_id = ?", memberID)
+		}
+
+		if err := query.Find(&vacationPlans).Error; err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		}
+
+		response := make([]dto.VacationPlanResponse, 0)
+		for _, plan := range vacationPlans {
+			var vacations []dto.ApplyVacationResponse
+			var earliestDate, latestDate time.Time
+			var withinRange bool
+			for i, vacation := range plan.ApplyVacations {
+				if vacation.StartDate.Before(endDate) && vacation.EndDate.After(startDate) {
+					withinRange = true
+					vacations = append(vacations, dto.ApplyVacationResponse{
+						ID:           vacation.ID,
+						StartDate:    vacation.StartDate,
+						EndDate:      vacation.EndDate,
+						HalfFirst:    vacation.HalfFirst,
+						HalfLast:     vacation.HalfLast,
+						Status:       vacation.VacationProcessStateID,
+						CancelStatus: vacation.VacationCancelStateID,
+					})
+					if i == 0 || vacation.StartDate.Before(earliestDate) {
+						earliestDate = vacation.StartDate
+					}
+					if i == 0 || vacation.EndDate.After(latestDate) {
+						latestDate = vacation.EndDate
+					}
+				}
+			}
+			if withinRange {
+				response = append(response, dto.VacationPlanResponse{
+					ID:         plan.ID,
+					MemberID:   plan.MemberID,
+					MemberName: plan.Member.Name,
+					ApplyDate:  plan.ApplyDate,
+					Vacations:  vacations,
+				})
+			}
+		}
+
+		return c.JSON(response)
 	}
 }
 

@@ -42,6 +42,7 @@ type ApproveVacationPlanRequest struct {
 type VacationPlanResponse struct {
 	ID           uint                    `json:"id"`
 	MemberID     uint                    `json:"member_id"`
+	MemberName   string                  `json:"member_name"`
 	ApplyDate    time.Time               `json:"apply_date"`
 	ApproveDate  *time.Time              `json:"approve_date"`
 	Vacations    []ApplyVacationResponse `json:"vacations"`
