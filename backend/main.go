@@ -92,17 +92,17 @@ func MigrateAndSeed(db *database.Database) error {
 
 	//휴가 발생 타입
 	vacationGenerateTypes := []models.VacationGenerateType{
-		{ID: enums.VacationGenerateTypeAnnualNormal, TypeName: "입사일 지급-월1일"},
-		{ID: enums.VacationGenerateTypeAnnualThisYearPreGiven, TypeName: "입사일 지급-당해년도 선지급"},
-		{ID: enums.VacationGenerateTypeAnnualOneYearPreGiven, TypeName: "입사일지급-11일 선지급"},
+		{ID: enums.VacationGenerateTypeAnnualNormal, TypeName: "입사일 지급-월1일", Description: "1년차까지 매월 1일 지급, 이후 년차별로 지급"},
+		{ID: enums.VacationGenerateTypeAnnualThisYearPreGiven, TypeName: "입사일 지급-당해년도 선지급", Description: "입사한 해 남은 달만큼 선지급, 이후 년차별로 지급"},
+		{ID: enums.VacationGenerateTypeAnnualOneYearPreGiven, TypeName: "입사일지급-11일 선지급", Description: "11일 선지급, 2년차부터 년차별로 지급"},
 
-		{ID: enums.VacationGenerateTypePreAccountingNormal, TypeName: "회계일 지급-월1일-선지급"},
-		{ID: enums.VacationGenerateTypePreAccountingThisYearPreGiven, TypeName: "회계일 지급-당해년도 선지급-선지급"},
-		{ID: enums.VacationGenerateTypePreAccountingOneYearPreGiven, TypeName: "회계일 지급-11일 선지급-선지급"},
+		{ID: enums.VacationGenerateTypePreAccountingNormal, TypeName: "회계일 지급-월1일-선지급", Description: "입사한 해 매월 1일 지급, 다음해 회계일기준 선지급"},
+		{ID: enums.VacationGenerateTypePreAccountingThisYearPreGiven, TypeName: "회계일 지급-당해년도 선지급-선지급", Description: "입사한 해 남은 달만큼 선지급, 다음해 회계일기준 선지급"},
+		{ID: enums.VacationGenerateTypePreAccountingOneYearPreGiven, TypeName: "회계일 지급-11일 선지급-선지급", Description: "11일 선지급, 입사 다음해 회계일기준 선지급"},
 
-		{ID: enums.VacationGenerateTypeProAccountingNormal, TypeName: "회계일 지급-월1일-비례지급"},
-		{ID: enums.VacationGenerateTypeProAccountingThisYearPreGiven, TypeName: "회계일 지급-당해년도 선지급-비례지급"},
-		{ID: enums.VacationGenerateTypeProAccountingOneYearPreGiven, TypeName: "회계일 지급-11일 선지급-비례지급"},
+		{ID: enums.VacationGenerateTypeProAccountingNormal, TypeName: "회계일 지급-월1일-비례지급", Description: "입사한 해 매월 1일 지급, 다음해 회계일기준 비례지급"},
+		{ID: enums.VacationGenerateTypeProAccountingThisYearPreGiven, TypeName: "회계일 지급-당해년도 선지급-비례지급", Description: "입사한 해 남은 달만큼 선지급, 다음해 회계일기준 비례지급"},
+		{ID: enums.VacationGenerateTypeProAccountingOneYearPreGiven, TypeName: "회계일 지급-11일 선지급-비례지급", Description: "11일 선지급, 입사 다음해 회계일기준 비례지급"},
 	}
 	for _, vgt := range vacationGenerateTypes {
 		db.FirstOrCreate(&vgt, models.VacationGenerateType{ID: vgt.ID})
