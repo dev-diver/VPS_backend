@@ -8,7 +8,7 @@ type Company struct {
 	AccountingDay          time.Time            `gorm:"type:date"` // MM-DD 형식
 	VacationGenerateTypeID uint                 `gorm:"index"`
 	VacationGenerateType   VacationGenerateType `gorm:"foreignKey:VacationGenerateTypeID"`
-	Admin                  []*Member            `gorm:"many2many:member_admins"`
+	Admins                 []*Member            `gorm:"many2many:member_admins"`
 	Members                []Member             `gorm:"foreignKey:CompanyID"`
 	Groups                 []Group              `gorm:"foreignKey:CompanyID"`
 }

@@ -25,6 +25,6 @@ func InitDB() (*Database, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to database: %w", err)
 	}
-	fmt.Printf("db connected")
+	fmt.Println("db connected")
 	return &Database{db}, nil
 }
