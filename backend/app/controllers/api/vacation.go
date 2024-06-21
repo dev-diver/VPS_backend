@@ -317,7 +317,7 @@ func ApproveVacationPlanHandler(db *database.Database) fiber.Handler {
 	}
 }
 
-func EditVacationPlanHandler(db *database.Database) fiber.Handler {
+func UpdateVacationPlanHandler(db *database.Database) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		return c.SendStatus(fiber.StatusNotImplemented)
 	}
@@ -337,7 +337,29 @@ func CancelVacationHandler(db *database.Database) fiber.Handler {
 
 func RejectVacationHandler(db *database.Database) fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		return c.SendStatus(fiber.StatusNotImplemented)
+		vacationId := c.Params("vacationID")
+		var vacation models.ApplyVacation
+		if err := db.DB.First(&vacation, vacationId).Error; err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		}
+		vacation.VacationProcessStateID = enums.VacationProcessStateRejected
+		vacation.VacationCancelStateID = enums.VacationCancelStateCompleted
+		if err := db.DB.Save(&vacation).Error; err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		}
+
+		//vacation을 vacationResponse로 변환하는 코드
+		vacationResponse := dto.ApplyVacationResponse{
+			ID:           vacation.ID,
+			StartDate:    vacation.StartDate,
+			EndDate:      vacation.EndDate,
+			HalfFirst:    vacation.HalfFirst,
+			HalfLast:     vacation.HalfLast,
+			Status:       vacation.VacationProcessStateID,
+			CancelStatus: vacation.VacationCancelStateID,
+		}
+
+		return c.JSON(vacationResponse)
 	}
 }
 
