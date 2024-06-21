@@ -45,8 +45,8 @@ type VacationPlanResponse struct {
 	ApplyDate    time.Time               `json:"apply_date"`
 	ApproveDate  *time.Time              `json:"approve_date"`
 	Vacations    []ApplyVacationResponse `json:"vacations"`
-	ProcessState string                  `json:"process_state"`
-	CancelState  string                  `json:"cancel_state"`
+	ProcessState uint                    `json:"process_state"`
+	CancelState  uint                    `json:"cancel_state"`
 }
 
 // ApplyVacationResponse DTO for vacation response
@@ -56,6 +56,18 @@ type ApplyVacationResponse struct {
 	EndDate      time.Time `json:"end_date"`
 	HalfFirst    bool      `json:"half_first"`
 	HalfLast     bool      `json:"half_last"`
-	Status       string    `json:"status"`
-	CancelStatus string    `json:"cancel_status"`
+	Status       uint      `json:"status"`
+	CancelStatus uint      `json:"cancel_status"`
+}
+
+type ApplyVacationCardResponse struct {
+	ID           uint      `json:"id"`
+	MemberID     uint      `json:"member_id"`
+	MemberName   string    `json:"member_name"`
+	StartDate    time.Time `json:"start_date"`
+	EndDate      time.Time `json:"end_date"`
+	HalfFirst    bool      `json:"half_first"`
+	HalfLast     bool      `json:"half_last"`
+	Status       uint      `json:"status"`
+	CancelStatus uint      `json:"cancel_status"`
 }
