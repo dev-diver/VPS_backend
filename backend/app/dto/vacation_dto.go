@@ -4,17 +4,17 @@ import "time"
 
 // CreateVacationPlanRequest DTO for creating a vacation plan
 type CreateVacationPlanRequest struct {
-	Vacations       []VacationRequest `json:"vacations"`
-	Approver1ID     uint              `json:"approver_1"`
-	ApproverFinalID uint              `json:"approver_final"`
+	Vacations       []VacationRequest `json:"vacations" validate:"required"`
+	Approver1ID     uint              `json:"approver_1" validate:"required"`
+	ApproverFinalID uint              `json:"approver_final" validate:"required"`
 }
 
 // VacationRequest DTO for vacation details
 type VacationRequest struct {
-	StartDate time.Time `json:"start_date"`
-	EndDate   time.Time `json:"end_date"` //TODO: start_date보다 크게
-	HalfFirst bool      `json:"half_first"`
-	HalfLast  bool      `json:"half_last"`
+	StartDate time.Time `json:"start_date" validate:"required"`
+	EndDate   time.Time `json:"end_date" validate:"required,gtefield=StartDate"`
+	HalfFirst bool      `json:"half_first" validate:"required"`
+	HalfLast  bool      `json:"half_last" validate:"required"`
 }
 
 // EditVacationPlanRequest DTO for editing a vacation plan
@@ -34,8 +34,8 @@ type VacationEditRequest struct {
 
 // ApproveVacationPlanRequest DTO for approving a vacation plan
 type ApproveVacationPlanRequest struct {
-	Approver1ID     uint `json:"approver_1"`
-	ApproverFinalID uint `json:"approver_final"`
+	ApprovalState uint `json:"approval_state" validate:"required"`
+	MemberID      uint `json:"member_id" validate:"required"`
 }
 
 // VacationPlanResponse DTO for vacation plan response
