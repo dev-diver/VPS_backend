@@ -9,6 +9,7 @@ import (
 func RegisterAPI(apiRouter fiber.Router, db *database.Database) {
 	registerAuth(apiRouter, db)
 	registerCompanies(apiRouter, db)
+	registerGroups(apiRouter, db)
 	registerMembers(apiRouter, db)
 	registerVacations(apiRouter, db)
 }
@@ -40,23 +41,27 @@ func registerCompanies(apiRouter fiber.Router, db *database.Database) {
 	groups := company.Group("/groups")
 	groups.Get("/", api.GetGroupsHandler(db))
 	groups.Post("/", api.CreateGroupHandler(db))
-	group := groups.Group("/:groupID")
+
+	vacations := company.Group("/vacations")
+	vacations.Get("/period", api.GetVacationsByPeriodHandler(db))
+	vacations.Get("/promotions", api.GetPromotionsHandler(db)) //촉진현황 가져오기
+}
+
+func registerGroups(apiRouter fiber.Router, db *database.Database) {
+	group := apiRouter.Group("groups/:groupID")
 	group.Get("/", api.GetGroupHandler(db))
 	group.Post("/", api.UpdateGroupHandler(db))
 	group.Delete("/", api.DeleteGroupHandler(db))
-	group.Put("/members", api.UpdateGroupMembersHandler(db)) // member key
-
-	vacations := company.Group("/vacations")
-	vacations.Get("/period/:year/:month?", api.GetVacationsByYearMonthHandler(db))
-	vacations.Post("/:vacationID/promotion", api.PromoteVacationHandler(db))
-	vacations.Get("/promotions", api.GetPromotionsHandler(db))
+	group.Put("/members", api.UpdateGroupMembersHandler(db))
+	group.Get("/vacations/period", api.GetVacationsByPeriodHandler(db))
 }
 
 func registerMembers(apiRouter fiber.Router, db *database.Database) {
 	member := apiRouter.Group("/members/:memberID")
 	vacations := member.Group("/vacations")
-	vacations.Post("/", api.ApplyVacationHandler(db))
-	vacations.Get("/period/:year/:month?", api.GetVacationsByYearMonthHandler(db))
+	vacations.Post("/plans", api.CreateVacationPlanHandler(db))
+	vacations.Get("/plans", api.GetVacationPlansHandler(db))
+	vacations.Get("/period", api.GetVacationsByPeriodHandler(db))
 
 	notifications := member.Group("/notifications")
 	notifications.Get("/", api.GetAllNotificationsHandler(db))
@@ -66,6 +71,11 @@ func registerMembers(apiRouter fiber.Router, db *database.Database) {
 
 func registerVacations(apiRouter fiber.Router, db *database.Database) {
 	vacations := apiRouter.Group("/vacations")
+
+	plan := vacations.Group("/plans/:planId")
+	plan.Post("/approve", api.ApproveVacationPlanHandler(db))
+	plan.Post("/edit", api.EditVacationPlanHandler(db))
+
 	vacation := vacations.Group("/:vacationID")
 	vacation.Post("/", api.UpdateVacationHandler(db))
 	vacation.Delete("/", api.CancelVacationHandler(db))
