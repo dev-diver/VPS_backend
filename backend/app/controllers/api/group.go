@@ -214,3 +214,28 @@ func UpdateGroupMembersHandler(db *database.Database) fiber.Handler {
 		return c.JSON(memberDTOs)
 	}
 }
+
+func GetGroupMembersHandler(db *database.Database) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		id := c.Params("groupID")
+		var group models.Group
+		if err := db.DB.Preload("Members").First(&group, id).Error; err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		}
+
+		// 멤버 정보를 MemberDTO로 변환
+		var memberDTOs []dto.MemberResponse
+		for _, member := range group.Members {
+			memberDTO := dto.MemberResponse{
+				ID:       member.ID,
+				Name:     member.Name,
+				Email:    member.Email,
+				HireDate: member.HireDate,
+				IsActive: member.IsActive,
+			}
+			memberDTOs = append(memberDTOs, memberDTO)
+		}
+
+		return c.JSON(memberDTOs)
+	}
+}
