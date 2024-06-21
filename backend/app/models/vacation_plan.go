@@ -7,9 +7,11 @@ type VacationPlan struct {
 	MemberID               uint   `gorm:"index"`
 	Member                 Member `gorm:"foreignKey:MemberID"`
 	Approver1ID            uint   `gorm:"index"`
-	FinalApproverID        uint   `gorm:"index"`
-	ApproveDate            time.Time
+	ApproverFinalID        uint   `gorm:"index"`
+	ApplyDate              time.Time
 	VacationProcessStateID uint                 `gorm:"index"`
 	VacationProcessState   VacationProcessState `gorm:"foreignKey:VacationProcessStateID"`
+	VacationCancelStateID  uint                 `gorm:"index"`
+	VacationCancelState    VacationCancelState  `gorm:"foreignKey:VacationCacncelStateID"`
 	ApplyVacations         []ApplyVacation      `gorm:"foreignKey:VacationPlanID"`
 }
