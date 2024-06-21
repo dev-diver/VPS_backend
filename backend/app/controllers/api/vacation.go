@@ -80,6 +80,44 @@ func CreateVacationPlanHandler(db *database.Database) fiber.Handler {
 	}
 }
 
+func GetVacationPlanHandler(db *database.Database) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		planID, err := strconv.ParseUint(c.Params("planID"), 10, 64)
+		if err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid plan ID"})
+		}
+
+		var plan models.VacationPlan
+		if err := db.DB.Preload("Member").Preload("ApplyVacations").First(&plan, planID).Error; err != nil {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Vacation plan not found"})
+		}
+
+		//vacationPlan을 vacationPlanResponse로 변환하는 코드
+		vacationPlanResponse := dto.VacationPlanResponse{
+			ID:           plan.ID,
+			MemberID:     plan.MemberID,
+			MemberName:   plan.Member.Name,
+			ApplyDate:    plan.ApplyDate,
+			ProcessState: plan.VacationProcessStateID,
+			CancelState:  plan.VacationCancelStateID,
+		}
+
+		for _, vacation := range plan.ApplyVacations {
+			vacationPlanResponse.Vacations = append(vacationPlanResponse.Vacations, dto.ApplyVacationResponse{
+				ID:           vacation.ID,
+				StartDate:    vacation.StartDate,
+				EndDate:      vacation.EndDate,
+				HalfFirst:    vacation.HalfFirst,
+				HalfLast:     vacation.HalfLast,
+				Status:       vacation.VacationProcessStateID,
+				CancelStatus: vacation.VacationCancelStateID,
+			})
+		}
+
+		return c.JSON(vacationPlanResponse)
+	}
+}
+
 func GetVacationsByPeriodHandler(db *database.Database) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		companyID, groupID, memberID, year, month, err := parseParams(c)
@@ -198,11 +236,13 @@ func GetVacationPlansByPeriodHandler(db *database.Database) fiber.Handler {
 			}
 			if withinRange {
 				response = append(response, dto.VacationPlanResponse{
-					ID:         plan.ID,
-					MemberID:   plan.MemberID,
-					MemberName: plan.Member.Name,
-					ApplyDate:  plan.ApplyDate,
-					Vacations:  vacations,
+					ID:           plan.ID,
+					MemberID:     plan.MemberID,
+					MemberName:   plan.Member.Name,
+					ApplyDate:    plan.ApplyDate,
+					Vacations:    vacations,
+					ProcessState: plan.VacationProcessStateID,
+					CancelState:  plan.VacationCancelStateID,
 				})
 			}
 		}
