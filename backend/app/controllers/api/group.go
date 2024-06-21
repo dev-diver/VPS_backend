@@ -19,7 +19,7 @@ func CreateGroupHandler(db *database.Database) fiber.Handler {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid company ID"})
 		}
 
-		var createGroupDTO dto.CreateGroupDTO
+		var createGroupDTO dto.CreateGroupRequest
 
 		// 요청 바디 파싱
 		if err := c.BodyParser(&createGroupDTO); err != nil {
@@ -48,7 +48,7 @@ func CreateGroupHandler(db *database.Database) fiber.Handler {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 		}
 
-		groupDTO := dto.GroupDTO{
+		groupDTO := dto.GroupResponse{
 			ID:        group.ID,
 			CompanyID: group.CompanyID,
 			Name:      group.Name,
@@ -73,7 +73,7 @@ func GetGroupHandler(db *database.Database) fiber.Handler {
 		}
 
 		// GroupDTO로 변환합니다.
-		groupDTO := dto.GroupDTO{
+		groupDTO := dto.GroupResponse{
 			ID:        group.ID,
 			CompanyID: group.CompanyID,
 			Name:      group.Name,
@@ -93,9 +93,9 @@ func GetGroupsHandler(db *database.Database) fiber.Handler {
 		}
 
 		// Groups를 GroupDTO로 변환합니다.
-		var groupDTOs []dto.GroupDTO
+		var groupDTOs []dto.GroupResponse
 		for _, group := range groups {
-			groupDTO := dto.GroupDTO{
+			groupDTO := dto.GroupResponse{
 				ID:        group.ID,
 				CompanyID: group.CompanyID,
 				Name:      group.Name,
@@ -124,7 +124,7 @@ func UpdateGroupHandler(db *database.Database) fiber.Handler {
 		}
 
 		// 요청 바디 파싱
-		var updateGroupDTO dto.CreateGroupDTO
+		var updateGroupDTO dto.CreateGroupRequest
 		if err := c.BodyParser(&updateGroupDTO); err != nil {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 		}
@@ -147,7 +147,7 @@ func UpdateGroupHandler(db *database.Database) fiber.Handler {
 		}
 
 		// GroupDTO로 변환
-		groupDTO := dto.GroupDTO{
+		groupDTO := dto.GroupResponse{
 			ID:        group.ID,
 			CompanyID: group.CompanyID,
 			Name:      group.Name,
@@ -195,9 +195,9 @@ func UpdateGroupMembersHandler(db *database.Database) fiber.Handler {
 		}
 
 		// 멤버 정보를 MemberDTO로 변환
-		var memberDTOs []dto.MemberDTO
+		var memberDTOs []dto.MemberResponse
 		for _, member := range members {
-			memberDTO := dto.MemberDTO{
+			memberDTO := dto.MemberResponse{
 				ID:       member.ID,
 				Name:     member.Name,
 				Email:    member.Email,

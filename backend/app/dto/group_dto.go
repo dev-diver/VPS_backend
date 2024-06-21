@@ -2,13 +2,13 @@ package dto
 
 import "cywell.com/vacation-promotion/app/models"
 
-type CreateGroupDTO struct {
+type CreateGroupRequest struct {
 	Name     string `json:"name" validate:"required"`
 	Color    string `json:"color" validate:"required"`
 	Priority *int   `json:"priority"`
 }
 
-type GroupDTO struct {
+type GroupResponse struct {
 	ID        uint            `json:"id"`
 	CompanyID uint            `json:"company_id" validate:"required"`
 	Name      string          `json:"name" validate:"required"`

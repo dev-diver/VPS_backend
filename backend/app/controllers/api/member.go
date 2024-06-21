@@ -19,7 +19,7 @@ func CreateMembersHandler(db *database.Database) fiber.Handler {
 		}
 
 		// DTO 객체를 생성
-		var memberDTOs []dto.CreateMemberDTO
+		var memberDTOs []dto.CreateMemberRequest
 		if err := c.BodyParser(&memberDTOs); err != nil {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 		}
@@ -70,7 +70,7 @@ func SearchMembersHandler(db *database.Database) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		keyword := c.Query("keyword")
 		companyID := c.Params("companyID")
-		var members []dto.MemberDTO
+		var members []dto.MemberResponse
 		query := db.DB.Table("members").
 			Select("id, name, email, hire_date, is_active").
 			Where("company_id = ? AND (name LIKE ? OR email LIKE ?)", companyID, "%"+keyword+"%", "%"+keyword+"%")
@@ -85,7 +85,7 @@ func SearchMembersHandler(db *database.Database) fiber.Handler {
 func GetMemberProfileHandler(db *database.Database) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		id := c.Params("memberID")
-		var member dto.MemberDTO
+		var member dto.MemberResponse
 		if err := db.DB.Table("members").First(&member, id).Error; err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 		}
@@ -96,7 +96,7 @@ func GetMemberProfileHandler(db *database.Database) fiber.Handler {
 func DeactivateMemberHandler(db *database.Database) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		id := c.Params("memberID")
-		var member dto.MemberDTO
+		var member dto.MemberResponse
 		if err := db.DB.Table("members").First(&member, id).Error; err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 		}
