@@ -109,8 +109,8 @@ func GetVacationPlanHandler(db *database.Database) fiber.Handler {
 				EndDate:      vacation.EndDate,
 				HalfFirst:    vacation.HalfFirst,
 				HalfLast:     vacation.HalfLast,
-				Status:       vacation.VacationProcessStateID,
-				CancelStatus: vacation.VacationCancelStateID,
+				ProcessState: vacation.VacationProcessStateID,
+				CancelState:  vacation.VacationCancelStateID,
 			})
 		}
 
@@ -163,8 +163,8 @@ func GetVacationsByPeriodHandler(db *database.Database) fiber.Handler {
 				EndDate:      vacation.EndDate,
 				HalfFirst:    vacation.HalfFirst,
 				HalfLast:     vacation.HalfLast,
-				Status:       vacation.VacationProcessStateID,
-				CancelStatus: vacation.VacationCancelStateID,
+				ProcessState: vacation.VacationProcessStateID,
+				CancelState:  vacation.VacationCancelStateID,
 			})
 		}
 		return c.JSON(vacationsResponse)
@@ -223,8 +223,8 @@ func GetVacationPlansByPeriodHandler(db *database.Database) fiber.Handler {
 						EndDate:      vacation.EndDate,
 						HalfFirst:    vacation.HalfFirst,
 						HalfLast:     vacation.HalfLast,
-						Status:       vacation.VacationProcessStateID,
-						CancelStatus: vacation.VacationCancelStateID,
+						ProcessState: vacation.VacationProcessStateID,
+						CancelState:  vacation.VacationCancelStateID,
 					})
 					if i == 0 || vacation.StartDate.Before(earliestDate) {
 						earliestDate = vacation.StartDate
@@ -329,12 +329,14 @@ func UpdateVacationHandler(db *database.Database) fiber.Handler {
 	}
 }
 
-func CancelVacationHandler(db *database.Database) fiber.Handler {
+// 요청자
+func DeleteVacationHandler(db *database.Database) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		return c.SendStatus(fiber.StatusNotImplemented)
 	}
 }
 
+// 결재자
 func RejectVacationHandler(db *database.Database) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		vacationId := c.Params("vacationID")
@@ -355,8 +357,8 @@ func RejectVacationHandler(db *database.Database) fiber.Handler {
 			EndDate:      vacation.EndDate,
 			HalfFirst:    vacation.HalfFirst,
 			HalfLast:     vacation.HalfLast,
-			Status:       vacation.VacationProcessStateID,
-			CancelStatus: vacation.VacationCancelStateID,
+			ProcessState: vacation.VacationProcessStateID,
+			CancelState:  vacation.VacationCancelStateID,
 		}
 
 		return c.JSON(vacationResponse)

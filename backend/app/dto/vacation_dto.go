@@ -24,12 +24,12 @@ type EditVacationPlanRequest struct {
 
 // VacationEditRequest DTO for editing vacation details
 type VacationEditRequest struct {
-	ID        uint      `json:"id"`
-	StartDate time.Time `json:"start_date"`
-	EndDate   time.Time `json:"end_date"`
-	HalfFirst bool      `json:"half_first"`
-	HalfLast  bool      `json:"half_last"`
-	Status    string    `json:"process_state"`
+	ID           uint      `json:"id"`
+	StartDate    time.Time `json:"start_date"`
+	EndDate      time.Time `json:"end_date"`
+	HalfFirst    bool      `json:"half_first"`
+	HalfLast     bool      `json:"half_last"`
+	ProcessState string    `json:"process_state"`
 }
 
 // ApproveVacationPlanRequest DTO for approving a vacation plan
@@ -57,8 +57,8 @@ type ApplyVacationResponse struct {
 	EndDate      time.Time `json:"end_date"`
 	HalfFirst    bool      `json:"half_first"`
 	HalfLast     bool      `json:"half_last"`
-	Status       uint      `json:"process_state"`
-	CancelStatus uint      `json:"cancel_state"`
+	ProcessState uint      `json:"process_state"`
+	CancelState  uint      `json:"cancel_state"`
 }
 
 type ApplyVacationCardResponse struct {
@@ -69,6 +69,6 @@ type ApplyVacationCardResponse struct {
 	EndDate      time.Time `json:"end_date"`
 	HalfFirst    bool      `json:"half_first"`
 	HalfLast     bool      `json:"half_last"`
-	Status       uint      `json:"process_state"`
-	CancelStatus uint      `json:"cancel_state"`
+	ProcessState uint      `json:"process_state"`
+	CancelState  uint      `json:"cancel_state"`
 }
