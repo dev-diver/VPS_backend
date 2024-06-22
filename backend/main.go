@@ -9,11 +9,13 @@ import (
 	"cywell.com/vacation-promotion/database"
 	"cywell.com/vacation-promotion/routes"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
 )
 
 func main() {
 
 	app := fiber.New()
+	app.Use(cors.New())
 	db, err := database.InitDB()
 	if err != nil {
 		log.Fatal("failed to connect database")
