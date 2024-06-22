@@ -10,7 +10,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-func CreateMembersHandler(db *database.Database) fiber.Handler {
+func CreateCompanyMembersHandler(db *database.Database) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		// URL에서 companyID 가져오기
 		companyID, err := strconv.ParseUint(c.Params("companyID"), 10, 32)
@@ -63,17 +63,6 @@ func CreateMembersHandler(db *database.Database) fiber.Handler {
 			})
 		}
 		return c.Status(fiber.StatusCreated).JSON(memberResponses)
-	}
-}
-
-func GetMembersHandler(db *database.Database) fiber.Handler {
-	return func(c *fiber.Ctx) error {
-		companyID := c.Params("companyID")
-		var members []models.Member
-		if err := db.DB.Where("company_id = ?", companyID).Find(&members).Error; err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
-		}
-		return c.JSON(members)
 	}
 }
 

@@ -30,9 +30,9 @@ func registerCompanies(apiRouter fiber.Router, db *database.Database) {
 	company.Delete("/", api.DeleteCompanyHandler(db))
 
 	members := company.Group("/members")
-	members.Get("/", api.GetMembersHandler(db))
-	members.Get("/search", api.SearchMembersHandler(db)) // keyword
-	members.Post("/", api.CreateMembersHandler(db))      // []
+	members.Get("/", api.GetCompanyMembersHandler(db))
+	members.Get("/search", api.SearchMembersHandler(db))   // keyword
+	members.Post("/", api.CreateCompanyMembersHandler(db)) // []
 
 	groups := company.Group("/groups")
 	groups.Get("/", api.GetGroupsHandler(db))

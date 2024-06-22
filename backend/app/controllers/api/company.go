@@ -66,3 +66,27 @@ func DeleteCompanyHandler(db *database.Database) fiber.Handler {
 		return c.SendStatus(fiber.StatusNoContent)
 	}
 }
+
+func GetCompanyMembersHandler(db *database.Database) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		companyID := c.Params("companyID")
+		var members []models.Member
+		if err := db.DB.Where("company_id = ?", companyID).Find(&members).Error; err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		}
+
+		var membersResponse []dto.MemberResponse
+		for _, member := range members {
+			memberResponse := dto.MemberResponse{
+				ID:       member.ID,
+				Name:     member.Name,
+				Email:    member.Email,
+				HireDate: member.HireDate,
+				IsActive: member.IsActive,
+			}
+			membersResponse = append(membersResponse, memberResponse)
+		}
+
+		return c.JSON(membersResponse)
+	}
+}
