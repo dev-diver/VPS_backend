@@ -1,6 +1,7 @@
 package api
 
 import (
+	"cywell.com/vacation-promotion/app/dto"
 	"cywell.com/vacation-promotion/app/models"
 	"cywell.com/vacation-promotion/database"
 	"github.com/gofiber/fiber/v2"
@@ -26,7 +27,16 @@ func GetCompanyHandler(db *database.Database) fiber.Handler {
 		if err := db.DB.Preload("VacationGenerateType").First(&company, id).Error; err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 		}
-		return c.JSON(company)
+		// company를 companyResponse형으로 변환
+		companyResponse := dto.CompanyResponse{
+			ID:                          company.ID,
+			Name:                        company.Name,
+			AccountingDay:               company.AccountingDay,
+			VacationGenerateTypeName:    company.VacationGenerateType.TypeName,
+			VacationGenerateDescription: company.VacationGenerateType.Description,
+		}
+
+		return c.JSON(companyResponse)
 	}
 }
 
