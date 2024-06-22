@@ -54,7 +54,6 @@ func CreateGroupHandler(db *database.Database) fiber.Handler {
 			Name:      group.Name,
 			Color:     group.Color,
 			Priority:  group.Priority,
-			Members:   group.Members,
 		}
 
 		return c.Status(fiber.StatusCreated).JSON(groupDTO)
@@ -79,7 +78,7 @@ func GetGroupHandler(db *database.Database) fiber.Handler {
 			Name:      group.Name,
 			Color:     group.Color,
 			Priority:  group.Priority,
-			Members:   group.Members,
+			Members:   dto.MapMembersToDTO(group.Members),
 		}
 		return c.JSON(groupDTO)
 	}
@@ -92,20 +91,21 @@ func GetGroupsHandler(db *database.Database) fiber.Handler {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid company ID"})
 		}
 		var groups []models.Group
-		if err := db.DB.Where("company_id = ?", companyID).Find(&groups).Error; err != nil {
+		if err := db.DB.Preload("Members").Where("company_id = ?", companyID).Find(&groups).Error; err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 		}
 
 		// Groups를 GroupDTO로 변환합니다.
 		var groupDTOs []dto.GroupResponse
 		for _, group := range groups {
+
 			groupDTO := dto.GroupResponse{
 				ID:        group.ID,
 				CompanyID: group.CompanyID,
 				Name:      group.Name,
 				Color:     group.Color,
 				Priority:  group.Priority,
-				Members:   group.Members,
+				Members:   dto.MapMembersToDTO(group.Members),
 			}
 			groupDTOs = append(groupDTOs, groupDTO)
 		}
@@ -157,7 +157,7 @@ func UpdateGroupHandler(db *database.Database) fiber.Handler {
 			Name:      group.Name,
 			Color:     group.Color,
 			Priority:  group.Priority,
-			Members:   group.Members,
+			Members:   dto.MapMembersToDTO(group.Members),
 		}
 
 		return c.JSON(groupDTO)
@@ -223,19 +223,6 @@ func GetGroupMembersHandler(db *database.Database) fiber.Handler {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 		}
 
-		// 멤버 정보를 MemberDTO로 변환
-		var memberDTOs []dto.MemberResponse
-		for _, member := range group.Members {
-			memberDTO := dto.MemberResponse{
-				ID:       member.ID,
-				Name:     member.Name,
-				Email:    member.Email,
-				HireDate: member.HireDate,
-				IsActive: member.IsActive,
-			}
-			memberDTOs = append(memberDTOs, memberDTO)
-		}
-
-		return c.JSON(memberDTOs)
+		return c.JSON(dto.MapMembersToDTO(group.Members))
 	}
 }

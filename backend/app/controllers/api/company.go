@@ -75,18 +75,6 @@ func GetCompanyMembersHandler(db *database.Database) fiber.Handler {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 		}
 
-		var membersResponse []dto.MemberResponse
-		for _, member := range members {
-			memberResponse := dto.MemberResponse{
-				ID:       member.ID,
-				Name:     member.Name,
-				Email:    member.Email,
-				HireDate: member.HireDate,
-				IsActive: member.IsActive,
-			}
-			membersResponse = append(membersResponse, memberResponse)
-		}
-
-		return c.JSON(membersResponse)
+		return c.JSON(dto.MapMembersToDTO(members))
 	}
 }
