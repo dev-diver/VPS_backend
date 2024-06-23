@@ -40,7 +40,7 @@ func registerCompanies(apiRouter fiber.Router, db *database.Database) {
 
 	vacations := company.Group("/vacations")
 	vacations.Get("/", api.GetVacationsByPeriodHandler(db))
-	vacations.Get("/plans", api.GetVacationsByPeriodHandler(db))
+	vacations.Get("/plans", api.GetVacationPlansByPeriodHandler(db))
 	vacations.Get("/promotions", api.GetPromotionsHandler(db)) //촉진현황 가져오기
 }
 
