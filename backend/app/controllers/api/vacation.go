@@ -303,6 +303,24 @@ func RejectVacationHandler(db *database.Database) fiber.Handler {
 	}
 }
 
+func CancelRejectVacationHandler(db *database.Database) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		vacationId := c.Params("vacationID")
+		var vacation models.ApplyVacation
+		if err := db.DB.First(&vacation, vacationId).Error; err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		}
+		vacation.VacationProcessStateID = enums.VacationProcessStateApplied //TODO: 이전 레벨로
+		vacation.VacationCancelStateID = enums.VacationCancelStateDefault
+		if err := db.DB.Save(&vacation).Error; err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		}
+
+		vacationResponse := dto.MapApplyVacationToResponse(vacation)
+		return c.JSON(vacationResponse)
+	}
+}
+
 func GetPromotionsHandler(db *database.Database) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		companyID := c.Params("companyID")
