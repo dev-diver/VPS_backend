@@ -92,26 +92,10 @@ func GetVacationPlanHandler(db *database.Database) fiber.Handler {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Vacation plan not found"})
 		}
 
-		//vacationPlan을 vacationPlanResponse로 변환하는 코드
-		vacationPlanResponse := dto.VacationPlanResponse{
-			ID:           plan.ID,
-			MemberID:     plan.MemberID,
-			MemberName:   plan.Member.Name,
-			ApplyDate:    plan.ApplyDate,
-			ProcessState: plan.VacationProcessStateID,
-			CancelState:  plan.VacationCancelStateID,
-		}
+		vacationPlanResponse := dto.MapVacationPlanToResponse(plan)
 
 		for _, vacation := range plan.ApplyVacations {
-			vacationPlanResponse.Vacations = append(vacationPlanResponse.Vacations, dto.ApplyVacationResponse{
-				ID:           vacation.ID,
-				StartDate:    vacation.StartDate,
-				EndDate:      vacation.EndDate,
-				HalfFirst:    vacation.HalfFirst,
-				HalfLast:     vacation.HalfLast,
-				ProcessState: vacation.VacationProcessStateID,
-				CancelState:  vacation.VacationCancelStateID,
-			})
+			vacationPlanResponse.Vacations = append(vacationPlanResponse.Vacations, dto.MapApplyVacationToResponse(vacation))
 		}
 
 		return c.JSON(vacationPlanResponse)
@@ -155,17 +139,7 @@ func GetVacationsByPeriodHandler(db *database.Database) fiber.Handler {
 
 		vacationsResponse := make([]dto.ApplyVacationCardResponse, 0)
 		for _, vacation := range vacations {
-			vacationsResponse = append(vacationsResponse, dto.ApplyVacationCardResponse{
-				ID:           vacation.ID,
-				MemberID:     vacation.MemberID,
-				MemberName:   vacation.Member.Name,
-				StartDate:    vacation.StartDate,
-				EndDate:      vacation.EndDate,
-				HalfFirst:    vacation.HalfFirst,
-				HalfLast:     vacation.HalfLast,
-				ProcessState: vacation.VacationProcessStateID,
-				CancelState:  vacation.VacationCancelStateID,
-			})
+			vacationsResponse = append(vacationsResponse, dto.MapApplyVacationToCardResponse(vacation))
 		}
 		return c.JSON(vacationsResponse)
 	}
@@ -211,40 +185,14 @@ func GetVacationPlansByPeriodHandler(db *database.Database) fiber.Handler {
 
 		response := make([]dto.VacationPlanResponse, 0)
 		for _, plan := range vacationPlans {
-			var vacations []dto.ApplyVacationResponse
-			var earliestDate, latestDate time.Time
-			var withinRange bool
-			for i, vacation := range plan.ApplyVacations {
-				if vacation.StartDate.Before(endDate) && vacation.EndDate.After(startDate) {
-					withinRange = true
-					vacations = append(vacations, dto.ApplyVacationResponse{
-						ID:           vacation.ID,
-						StartDate:    vacation.StartDate,
-						EndDate:      vacation.EndDate,
-						HalfFirst:    vacation.HalfFirst,
-						HalfLast:     vacation.HalfLast,
-						ProcessState: vacation.VacationProcessStateID,
-						CancelState:  vacation.VacationCancelStateID,
-					})
-					if i == 0 || vacation.StartDate.Before(earliestDate) {
-						earliestDate = vacation.StartDate
-					}
-					if i == 0 || vacation.EndDate.After(latestDate) {
-						latestDate = vacation.EndDate
-					}
-				}
+
+			vacationPlanResponse := dto.MapVacationPlanToResponse(plan)
+
+			for _, vacation := range plan.ApplyVacations {
+				vacationPlanResponse.Vacations = append(vacationPlanResponse.Vacations, dto.MapApplyVacationToResponse(vacation))
 			}
-			if withinRange {
-				response = append(response, dto.VacationPlanResponse{
-					ID:           plan.ID,
-					MemberID:     plan.MemberID,
-					MemberName:   plan.Member.Name,
-					ApplyDate:    plan.ApplyDate,
-					Vacations:    vacations,
-					ProcessState: plan.VacationProcessStateID,
-					CancelState:  plan.VacationCancelStateID,
-				})
-			}
+
+			response = append(response, vacationPlanResponse)
 		}
 
 		return c.JSON(response)
@@ -350,17 +298,7 @@ func RejectVacationHandler(db *database.Database) fiber.Handler {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 		}
 
-		//vacation을 vacationResponse로 변환하는 코드
-		vacationResponse := dto.ApplyVacationResponse{
-			ID:           vacation.ID,
-			StartDate:    vacation.StartDate,
-			EndDate:      vacation.EndDate,
-			HalfFirst:    vacation.HalfFirst,
-			HalfLast:     vacation.HalfLast,
-			ProcessState: vacation.VacationProcessStateID,
-			CancelState:  vacation.VacationCancelStateID,
-		}
-
+		vacationResponse := dto.MapApplyVacationToResponse(vacation)
 		return c.JSON(vacationResponse)
 	}
 }

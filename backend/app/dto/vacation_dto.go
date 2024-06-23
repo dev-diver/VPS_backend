@@ -1,6 +1,10 @@
 package dto
 
-import "time"
+import (
+	"time"
+
+	"cywell.com/vacation-promotion/app/models"
+)
 
 // CreateVacationPlanRequest DTO for creating a vacation plan
 type CreateVacationPlanRequest struct {
@@ -71,4 +75,42 @@ type ApplyVacationCardResponse struct {
 	HalfLast     bool      `json:"half_last"`
 	ProcessState uint      `json:"process_state"`
 	CancelState  uint      `json:"cancel_state"`
+}
+
+func MapApplyVacationToResponse(vacation models.ApplyVacation) ApplyVacationResponse {
+	return ApplyVacationResponse{
+		ID:           vacation.ID,
+		StartDate:    vacation.StartDate,
+		EndDate:      vacation.EndDate,
+		HalfFirst:    vacation.HalfFirst,
+		HalfLast:     vacation.HalfLast,
+		ProcessState: vacation.VacationProcessStateID,
+		CancelState:  vacation.VacationCancelStateID,
+	}
+}
+
+func MapApplyVacationToCardResponse(vacation models.ApplyVacation) ApplyVacationCardResponse {
+	return ApplyVacationCardResponse{
+		ID:           vacation.ID,
+		MemberID:     vacation.MemberID,
+		MemberName:   vacation.Member.Name,
+		StartDate:    vacation.StartDate,
+		EndDate:      vacation.EndDate,
+		HalfFirst:    vacation.HalfFirst,
+		HalfLast:     vacation.HalfLast,
+		ProcessState: vacation.VacationProcessStateID,
+		CancelState:  vacation.VacationCancelStateID,
+	}
+}
+
+func MapVacationPlanToResponse(plan models.VacationPlan) VacationPlanResponse {
+	return VacationPlanResponse{
+		ID:           plan.ID,
+		MemberID:     plan.MemberID,
+		MemberName:   plan.Member.Name,
+		ApplyDate:    plan.ApplyDate,
+		Vacations:    nil,
+		ProcessState: plan.VacationProcessStateID,
+		CancelState:  plan.VacationCancelStateID,
+	}
 }
