@@ -6,6 +6,7 @@ import (
 
 	"cywell.com/vacation-promotion/app/enums"
 	"cywell.com/vacation-promotion/app/models"
+	"cywell.com/vacation-promotion/app/utils"
 	"cywell.com/vacation-promotion/database"
 	"cywell.com/vacation-promotion/routes"
 	"github.com/gofiber/fiber/v2"
@@ -16,6 +17,11 @@ func main() {
 
 	app := fiber.New()
 	app.Use(cors.New())
+
+	if err := utils.SetJWTSecretKey(); err != nil {
+		log.Fatal("failed to set jwt secret")
+	}
+
 	db, err := database.InitDB()
 	if err != nil {
 		log.Fatal("failed to connect database")
