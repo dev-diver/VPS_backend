@@ -3,7 +3,7 @@ package database
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"os"
 )
 
 type Config struct {
@@ -16,7 +16,7 @@ type Config struct {
 
 func LoadConfig(configFile string) (*Config, error) {
 	config := &Config{}
-	file, err := ioutil.ReadFile(configFile)
+	file, err := os.ReadFile(configFile)
 	if err != nil {
 		return nil, fmt.Errorf("could not read config file: %w", err)
 	}
