@@ -8,6 +8,7 @@ import (
 	"cywell.com/vacation-promotion/database"
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
+	"golang.org/x/crypto/bcrypt"
 )
 
 func CreateCompanyMembersHandler(db *database.Database) fiber.Handler {
@@ -35,11 +36,17 @@ func CreateCompanyMembersHandler(db *database.Database) fiber.Handler {
 		// DTO 데이터를 실제 모델로 변환
 		var members []models.Member
 		for _, memberDTO := range memberDTOs {
+
+			hashedPassword, err := bcrypt.GenerateFromPassword([]byte(memberDTO.Password), bcrypt.DefaultCost)
+			if err != nil {
+				return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "could not hash password"})
+			}
+
 			member := models.Member{
 				CompanyID: uint(companyID),
 				Name:      memberDTO.Name,
 				Email:     memberDTO.Email,
-				Password:  memberDTO.Password,
+				Password:  string(hashedPassword),
 				HireDate:  memberDTO.HireDate,
 				IsActive:  true, // 자동으로 True 설정
 			}
