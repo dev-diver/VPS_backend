@@ -1,6 +1,8 @@
 package api
 
 import (
+	"time"
+
 	"cywell.com/vacation-promotion/app/dto"
 	"cywell.com/vacation-promotion/app/models"
 	"cywell.com/vacation-promotion/app/utils"
@@ -51,7 +53,15 @@ func LoginHandler(db *database.Database) fiber.Handler {
 		loginResponse.Member = memberResponse
 		loginResponse.CompanyID = member.CompanyID
 		loginResponse.GroupIDs = groupIDs
-		loginResponse.Token = token
+
+		cookie := new(fiber.Cookie)
+		cookie.Name = "token"
+		cookie.Value = token
+		cookie.Expires = time.Now().Add(24 * time.Hour)
+		cookie.HTTPOnly = true
+		cookie.Secure = true
+		cookie.SameSite = "Strict"
+		c.Cookie(cookie)
 
 		return c.Status(fiber.StatusOK).JSON(loginResponse)
 	}

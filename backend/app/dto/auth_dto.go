@@ -9,5 +9,4 @@ type LoginResponse struct {
 	Member    MemberResponse `json:"member"`
 	CompanyID uint           `json:"company_id"`
 	GroupIDs  []uint         `json:"group_ids"`
-	Token     string         `json:"token"`
 }
