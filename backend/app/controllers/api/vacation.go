@@ -122,7 +122,7 @@ func GetVacationHandler(db *database.Database) fiber.Handler {
 
 func GetVacationsByPeriodHandler(db *database.Database) fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		companyID, groupID, memberID, year, month, err := parseParams(c)
+		companyID, groupID, memberID, _, year, month, err := parseParams(c)
 		if err != nil {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 		}
@@ -165,7 +165,7 @@ func GetVacationsByPeriodHandler(db *database.Database) fiber.Handler {
 
 func GetVacationPlansByPeriodHandler(db *database.Database) fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		companyID, groupID, memberID, year, month, err := parseParams(c)
+		companyID, groupID, memberID, approverID, year, month, err := parseParams(c)
 		if err != nil {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 		}
@@ -195,6 +195,11 @@ func GetVacationPlansByPeriodHandler(db *database.Database) fiber.Handler {
 		} else if memberID != 0 {
 			query = query.Where("vacation_plans.member_id = ?", memberID).
 				Preload("Member")
+		} else if approverID != 0 {
+			query = query.Where("approver1_id = ? OR approver_final_id = ?", approverID, approverID).
+				Preload("Member")
+		} else {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "invalid query"})
 		}
 
 		if err := query.Find(&vacationPlans).Error; err != nil {
@@ -451,49 +456,56 @@ func GetPromotionsHandler(db *database.Database) fiber.Handler {
 	}
 }
 
-func parseParams(c *fiber.Ctx) (uint64, uint64, uint64, int, int, error) {
+func parseParams(c *fiber.Ctx) (uint64, uint64, uint64, uint64, int, int, error) {
 	companyIDStr := c.Params("companyID")
 	groupIDStr := c.Params("groupID")
 	memberIDStr := c.Params("memberID")
 	yearStr := c.Query("year")
 	monthStr := c.Query("month")
+	approverIDstr := c.Query("approverID")
 
-	var companyID, groupID, memberID uint64
+	var companyID, groupID, memberID, approverID uint64
 	var year, month int
 	var err error
 
 	if companyIDStr != "" {
 		companyID, err = strconv.ParseUint(companyIDStr, 10, 32)
 		if err != nil {
-			return 0, 0, 0, 0, 0, fmt.Errorf("invalid company ID")
+			return 0, 0, 0, 0, 0, 0, fmt.Errorf("invalid company ID")
 		}
 	}
 	if groupIDStr != "" {
 		groupID, err = strconv.ParseUint(groupIDStr, 10, 32)
 		if err != nil {
-			return 0, 0, 0, 0, 0, fmt.Errorf("invalid group ID")
+			return 0, 0, 0, 0, 0, 0, fmt.Errorf("invalid group ID")
 		}
 	}
 	if memberIDStr != "" {
 		memberID, err = strconv.ParseUint(memberIDStr, 10, 32)
 		if err != nil {
-			return 0, 0, 0, 0, 0, fmt.Errorf("invalid member ID")
+			return 0, 0, 0, 0, 0, 0, fmt.Errorf("invalid member ID")
+		}
+	}
+	if approverIDstr != "" {
+		approverID, err = strconv.ParseUint(approverIDstr, 10, 32)
+		if err != nil {
+			return 0, 0, 0, 0, 0, 0, fmt.Errorf("invalid approver ID")
 		}
 	}
 
 	year, err = strconv.Atoi(yearStr)
 	if err != nil {
-		return 0, 0, 0, 0, 0, fmt.Errorf("invalid year")
+		return 0, 0, 0, 0, 0, 0, fmt.Errorf("invalid year")
 	}
 
 	if monthStr != "" {
 		month, err = strconv.Atoi(monthStr)
 		if err != nil {
-			return 0, 0, 0, 0, 0, fmt.Errorf("invalid month")
+			return 0, 0, 0, 0, 0, 0, fmt.Errorf("invalid month")
 		}
 	}
 
-	return companyID, groupID, memberID, year, month, nil
+	return companyID, groupID, memberID, approverID, year, month, nil
 }
 
 func ValidateVacationPlanRequest(c *fiber.Ctx, db *database.Database, planID uint64) (dto.ApproveVacationPlanRequest, models.VacationPlan, error) {

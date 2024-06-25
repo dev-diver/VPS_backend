@@ -77,8 +77,10 @@ func registerMembers(apiRouter fiber.Router, db *database.Database) {
 
 func registerVacations(apiRouter fiber.Router, db *database.Database) {
 	vacations := apiRouter.Group("/vacations")
+	plans := vacations.Group("/plans")
+	plans.Get("/", api.GetVacationPlansByPeriodHandler(db)) //approver, year
 
-	plan := vacations.Group("/plans/:planId")
+	plan := plans.Group("/:planId")
 	plan.Get("/", api.GetVacationPlanHandler(db))
 	plan.Post("/approve", api.ApproveVacationPlanHandler(db))
 	plan.Post("/reject", api.RejectVacationPlanHandler(db))
