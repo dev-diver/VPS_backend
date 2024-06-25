@@ -103,6 +103,23 @@ func GetVacationPlanHandler(db *database.Database) fiber.Handler {
 	}
 }
 
+func GetVacationHandler(db *database.Database) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		vacationID, err := strconv.ParseUint(c.Params("vacationID"), 10, 64)
+		if err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid plan ID"})
+		}
+
+		var vacation models.ApplyVacation
+		if err := db.DB.Preload("Member").First(&vacation, vacationID).Error; err != nil {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Vacation plan not found"})
+		}
+
+		vacationResponse := dto.MapApplyVacationToResponse(vacation)
+		return c.JSON(vacationResponse)
+	}
+}
+
 func GetVacationsByPeriodHandler(db *database.Database) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		companyID, groupID, memberID, year, month, err := parseParams(c)
