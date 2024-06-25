@@ -84,6 +84,7 @@ func registerVacations(apiRouter fiber.Router, db *database.Database) {
 	plan.Post("/reject", api.RejectVacationPlanHandler(db))
 	plan.Post("/cancel-reject", api.CancelRejectVacationPlanHandler(db))
 	plan.Post("/", api.UpdateVacationPlanHandler(db))
+	plan.Delete("/", api.DeleteVacationPlanHandler(db))
 
 	vacation := vacations.Group("/:vacationID")
 	vacation.Get("/", api.GetVacationHandler(db))

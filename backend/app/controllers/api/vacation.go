@@ -353,9 +353,51 @@ func UpdateVacationHandler(db *database.Database) fiber.Handler {
 }
 
 // 요청자
+func DeleteVacationPlanHandler(db *database.Database) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		planID := c.Params("planID")
+		var plan models.VacationPlan
+
+		tx := db.DB.Begin()
+		if err := tx.Error; err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		}
+
+		if err := tx.Preload("ApplyVacations").First(&plan, planID).Error; err != nil {
+			tx.Rollback()
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		}
+
+		if err := tx.Where("vacation_plan_id = ?", planID).Delete(&models.ApplyVacation{}).Error; err != nil {
+			tx.Rollback()
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		}
+
+		if err := tx.Delete(&plan).Error; err != nil {
+			tx.Rollback()
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		}
+
+		if err := tx.Commit().Error; err != nil {
+			tx.Rollback()
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		}
+
+		return c.JSON(fiber.Map{"message": "Vacation plan deleted successfully"})
+	}
+}
+
 func DeleteVacationHandler(db *database.Database) fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		return c.SendStatus(fiber.StatusNotImplemented)
+		vacationId := c.Params("vacationID")
+		var vacation models.ApplyVacation
+		if err := db.DB.First(&vacation, vacationId).Error; err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		}
+		if err := db.DB.Delete(&vacation).Error; err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		}
+		return c.JSON(fiber.Map{"message": "Vacation deleted successfully"})
 	}
 }
 
