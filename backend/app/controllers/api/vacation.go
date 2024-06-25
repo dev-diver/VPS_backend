@@ -465,31 +465,31 @@ func parseParams(c *fiber.Ctx) (uint64, uint64, uint64, int, int, error) {
 	if companyIDStr != "" {
 		companyID, err = strconv.ParseUint(companyIDStr, 10, 32)
 		if err != nil {
-			return 0, 0, 0, 0, 0, fmt.Errorf("Invalid company ID")
+			return 0, 0, 0, 0, 0, fmt.Errorf("invalid company ID")
 		}
 	}
 	if groupIDStr != "" {
 		groupID, err = strconv.ParseUint(groupIDStr, 10, 32)
 		if err != nil {
-			return 0, 0, 0, 0, 0, fmt.Errorf("Invalid group ID")
+			return 0, 0, 0, 0, 0, fmt.Errorf("invalid group ID")
 		}
 	}
 	if memberIDStr != "" {
 		memberID, err = strconv.ParseUint(memberIDStr, 10, 32)
 		if err != nil {
-			return 0, 0, 0, 0, 0, fmt.Errorf("Invalid member ID")
+			return 0, 0, 0, 0, 0, fmt.Errorf("invalid member ID")
 		}
 	}
 
 	year, err = strconv.Atoi(yearStr)
 	if err != nil {
-		return 0, 0, 0, 0, 0, fmt.Errorf("Invalid year")
+		return 0, 0, 0, 0, 0, fmt.Errorf("invalid year")
 	}
 
 	if monthStr != "" {
 		month, err = strconv.Atoi(monthStr)
 		if err != nil {
-			return 0, 0, 0, 0, 0, fmt.Errorf("Invalid month")
+			return 0, 0, 0, 0, 0, fmt.Errorf("invalid month")
 		}
 	}
 
