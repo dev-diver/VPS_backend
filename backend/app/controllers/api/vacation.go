@@ -88,11 +88,16 @@ func GetVacationPlanHandler(db *database.Database) fiber.Handler {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid plan ID"})
 		}
 
-		var plan models.VacationPlan
-		if err := db.DB.Preload("Member").Preload("ApplyVacations").First(&plan, planID).Error; err != nil {
+		var plan models.VacationPlan //TODO : Preload 최적화
+		if err := db.DB.
+			Preload("Member").
+			Preload("Approver1").
+			Preload("ApproverFinal").
+			Preload("ApplyVacations").First(&plan, planID).Error; err != nil {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Vacation plan not found"})
 		}
 
+		fmt.Printf("%+v\n", plan)
 		vacationPlanResponse := dto.MapVacationPlanToResponse(plan)
 
 		for _, vacation := range plan.ApplyVacations {
@@ -179,25 +184,32 @@ func GetVacationPlansByPeriodHandler(db *database.Database) fiber.Handler {
 			endDate = startDate.AddDate(1, 0, -1)
 		}
 
-		var vacationPlans []models.VacationPlan
-		query := db.DB.Preload("ApplyVacations", "start_date <= ? AND end_date >= ?", endDate, startDate).
-			Preload("ApplyVacations.Member")
+		var vacationPlans []models.VacationPlan //TODO : Preload 최적화
+		query := db.DB.Preload("ApplyVacations", "start_date <= ? AND end_date >= ?", endDate, startDate)
 
 		if companyID != 0 {
 			query = query.Joins("JOIN members ON members.id = vacation_plans.member_id").
 				Where("members.company_id = ?", companyID).
-				Preload("Member", "company_id = ?", companyID)
+				Preload("Member", "company_id = ?", companyID).
+				Preload("Approver1", "company_id = ?", companyID).
+				Preload("ApproverFinal", "company_id = ?", companyID)
 		} else if groupID != 0 {
 			query = query.Joins("JOIN group_members ON group_members.member_id = vacation_plans.member_id").
 				Joins("JOIN members ON members.id = group_members.member_id").
 				Where("group_members.group_id = ?", groupID).
-				Preload("Member", "id IN (SELECT member_id FROM group_members WHERE group_id = ?)", groupID)
+				Preload("Member", "id IN (SELECT member_id FROM group_members WHERE group_id = ?)", groupID).
+				Preload("Approver1").
+				Preload("ApproverFinal")
 		} else if memberID != 0 {
 			query = query.Where("vacation_plans.member_id = ?", memberID).
-				Preload("Member")
+				Preload("Member").
+				Preload("Approver1").
+				Preload("ApproverFinal")
 		} else if approverID != 0 {
 			query = query.Where("approver1_id = ? OR approver_final_id = ?", approverID, approverID).
-				Preload("Member")
+				Preload("Member").
+				Preload("Approver1").
+				Preload("ApproverFinal")
 		} else {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "invalid query"})
 		}

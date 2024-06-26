@@ -44,16 +44,18 @@ type ApproveVacationPlanRequest struct {
 
 // VacationPlanResponse DTO for vacation plan response
 type VacationPlanResponse struct {
-	ID              uint                    `json:"id"`
-	MemberID        uint                    `json:"member_id"`
-	MemberName      string                  `json:"member_name"`
-	ApplyDate       time.Time               `json:"apply_date"`
-	ApproveDate     *time.Time              `json:"approve_date"`
-	Approver1ID     uint                    `json:"approver_1"`
-	ApproverFinalID uint                    `json:"approver_final"`
-	Vacations       []ApplyVacationResponse `json:"vacations"`
-	ProcessState    uint                    `json:"process_state"`
-	CancelState     uint                    `json:"cancel_state"`
+	ID                uint                    `json:"id"`
+	MemberID          uint                    `json:"member_id"`
+	MemberName        string                  `json:"member_name"`
+	ApplyDate         time.Time               `json:"apply_date"`
+	ApproveDate       *time.Time              `json:"approve_date"`
+	Approver1ID       uint                    `json:"approver_1"`
+	ApproverFinalID   uint                    `json:"approver_final"`
+	Approver1Name     string                  `json:"approver_1_name"`
+	ApproverFinalName string                  `json:"approver_final_name"`
+	Vacations         []ApplyVacationResponse `json:"vacations"`
+	ProcessState      uint                    `json:"process_state"`
+	CancelState       uint                    `json:"cancel_state"`
 }
 
 // ApplyVacationResponse DTO for vacation response
@@ -107,14 +109,16 @@ func MapApplyVacationToCardResponse(vacation models.ApplyVacation) ApplyVacation
 
 func MapVacationPlanToResponse(plan models.VacationPlan) VacationPlanResponse {
 	return VacationPlanResponse{
-		ID:              plan.ID,
-		MemberID:        plan.MemberID,
-		MemberName:      plan.Member.Name,
-		ApplyDate:       plan.ApplyDate,
-		Approver1ID:     plan.Approver1ID,
-		ApproverFinalID: plan.ApproverFinalID,
-		Vacations:       nil,
-		ProcessState:    plan.VacationProcessStateID,
-		CancelState:     plan.VacationCancelStateID,
+		ID:                plan.ID,
+		MemberID:          plan.MemberID,
+		MemberName:        plan.Member.Name,
+		ApplyDate:         plan.ApplyDate,
+		Approver1ID:       plan.Approver1ID,
+		ApproverFinalID:   plan.ApproverFinalID,
+		Approver1Name:     plan.Approver1.Name,
+		ApproverFinalName: plan.ApproverFinal.Name,
+		Vacations:         nil,
+		ProcessState:      plan.VacationProcessStateID,
+		CancelState:       plan.VacationCancelStateID,
 	}
 }
