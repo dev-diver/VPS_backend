@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"cywell.com/vacation-promotion/app/auth"
 	"cywell.com/vacation-promotion/app/controllers/api"
 	"cywell.com/vacation-promotion/database"
 	"github.com/gofiber/fiber/v2"
@@ -17,10 +18,12 @@ func RegisterAPI(apiRouter fiber.Router, db *database.Database) {
 func registerAuth(apiRouter fiber.Router, db *database.Database) {
 	auth := apiRouter.Group("/auth")
 	auth.Post("/login", api.LoginHandler(db))
+	auth.Post("/logout", api.LogoutHandler(db))
 }
 
 func registerCompanies(apiRouter fiber.Router, db *database.Database) {
-	companies := apiRouter.Group("/companies")
+
+	companies := apiRouter.Group("/companies", auth.AuthCheckMiddleware)
 	companies.Post("/", api.CreateCompanyHandler(db))
 
 	company := companies.Group("/:companyID")
@@ -44,7 +47,9 @@ func registerCompanies(apiRouter fiber.Router, db *database.Database) {
 }
 
 func registerGroups(apiRouter fiber.Router, db *database.Database) {
-	group := apiRouter.Group("groups/:groupID")
+
+	groups := apiRouter.Group("/groups", auth.AuthCheckMiddleware)
+	group := groups.Group("/:groupID")
 	group.Get("/", api.GetGroupHandler(db))
 	group.Post("/", api.UpdateGroupHandler(db))
 	group.Delete("/", api.DeleteGroupHandler(db))
@@ -59,7 +64,9 @@ func registerGroups(apiRouter fiber.Router, db *database.Database) {
 }
 
 func registerMembers(apiRouter fiber.Router, db *database.Database) {
-	member := apiRouter.Group("/members/:memberID")
+
+	members := apiRouter.Group("/members", auth.AuthCheckMiddleware)
+	member := members.Group("/:memberID")
 	member.Get("/profile", api.GetMemberProfileHandler(db))
 	member.Post("/deactivate", api.DeactivateMemberHandler(db))
 	member.Delete("/", api.DeleteMemberHandler(db))
@@ -76,7 +83,8 @@ func registerMembers(apiRouter fiber.Router, db *database.Database) {
 }
 
 func registerVacations(apiRouter fiber.Router, db *database.Database) {
-	vacations := apiRouter.Group("/vacations")
+
+	vacations := apiRouter.Group("/vacations", auth.AuthCheckMiddleware)
 	plans := vacations.Group("/plans")
 	plans.Get("/", api.GetVacationPlansByPeriodHandler(db)) //approver, year
 
