@@ -6,14 +6,11 @@ import (
 	"cywell.com/vacation-promotion/app/models"
 )
 
-// CreateVacationPlanRequest DTO for creating a vacation plan
 type CreateVacationPlanRequest struct {
-	Vacations       []VacationRequest `json:"vacations" validate:"required"`
-	Approver1ID     uint              `json:"approver_1" validate:"required"`
-	ApproverFinalID uint              `json:"approver_final" validate:"required"`
+	Vacations []VacationRequest `json:"vacations" validate:"required"`
+	Approvers []uint            `json:"approvers" validate:"required"`
 }
 
-// VacationRequest DTO for vacation details
 type VacationRequest struct {
 	StartDate time.Time `json:"start_date" validate:"required"`
 	EndDate   time.Time `json:"end_date" validate:"required,gtefield=StartDate"`
@@ -21,12 +18,10 @@ type VacationRequest struct {
 	HalfLast  bool      `json:"half_last" validate:"required"`
 }
 
-// EditVacationPlanRequest DTO for editing a vacation plan
 type EditVacationPlanRequest struct {
 	Vacations []VacationEditRequest `json:"vacations"`
 }
 
-// VacationEditRequest DTO for editing vacation details
 type VacationEditRequest struct {
 	ID           uint      `json:"id"`
 	StartDate    time.Time `json:"start_date"`
@@ -36,37 +31,30 @@ type VacationEditRequest struct {
 	ProcessState string    `json:"process_state"`
 }
 
-// ApproveVacationPlanRequest DTO for approving a vacation plan
 type ApproveVacationPlanRequest struct {
 	ApprovalState uint `json:"approval_state" validate:"required"`
 	MemberID      uint `json:"member_id" validate:"required"`
 }
 
-// VacationPlanResponse DTO for vacation plan response
 type VacationPlanResponse struct {
-	ID                uint                    `json:"id"`
-	MemberID          uint                    `json:"member_id"`
-	MemberName        string                  `json:"member_name"`
-	ApplyDate         time.Time               `json:"apply_date"`
-	ApproveDate       *time.Time              `json:"approve_date"`
-	Approver1ID       uint                    `json:"approver_1"`
-	ApproverFinalID   uint                    `json:"approver_final"`
-	Approver1Name     string                  `json:"approver_1_name"`
-	ApproverFinalName string                  `json:"approver_final_name"`
-	Vacations         []ApplyVacationResponse `json:"vacations"`
-	ProcessState      uint                    `json:"process_state"`
-	CancelState       uint                    `json:"cancel_state"`
+	ID            uint                    `json:"id"`
+	MemberID      uint                    `json:"member_id"`
+	MemberName    string                  `json:"member_name"`
+	ApplyDate     time.Time               `json:"apply_date"`
+	ApproverOrder []models.ApproverOrder  `json:"approver_order"`
+	Vacations     []ApplyVacationResponse `json:"vacations"`
+	ApproveStage  uint                    `json:"approve_stage"`
+	RejectState   bool                    `json:"reject_state"`
 }
 
-// ApplyVacationResponse DTO for vacation response
 type ApplyVacationResponse struct {
 	ID           uint      `json:"id"`
 	StartDate    time.Time `json:"start_date"`
 	EndDate      time.Time `json:"end_date"`
 	HalfFirst    bool      `json:"half_first"`
 	HalfLast     bool      `json:"half_last"`
-	ProcessState uint      `json:"process_state"`
-	CancelState  uint      `json:"cancel_state"`
+	ApproveStage uint      `json:"approve_stage"`
+	RejectState  bool      `json:"reject_state"`
 }
 
 type ApplyVacationCardResponse struct {
@@ -77,8 +65,8 @@ type ApplyVacationCardResponse struct {
 	EndDate      time.Time `json:"end_date"`
 	HalfFirst    bool      `json:"half_first"`
 	HalfLast     bool      `json:"half_last"`
-	ProcessState uint      `json:"process_state"`
-	CancelState  uint      `json:"cancel_state"`
+	ApproveStage uint      `json:"approve_stage"`
+	RejectState  bool      `json:"reject_state"`
 }
 
 func MapApplyVacationToResponse(vacation models.ApplyVacation) ApplyVacationResponse {
@@ -87,9 +75,8 @@ func MapApplyVacationToResponse(vacation models.ApplyVacation) ApplyVacationResp
 		StartDate:    vacation.StartDate,
 		EndDate:      vacation.EndDate,
 		HalfFirst:    vacation.HalfFirst,
-		HalfLast:     vacation.HalfLast,
-		ProcessState: vacation.VacationProcessStateID,
-		CancelState:  vacation.VacationCancelStateID,
+		ApproveStage: vacation.ApproveStage,
+		RejectState:  vacation.RejectState,
 	}
 }
 
@@ -102,23 +89,20 @@ func MapApplyVacationToCardResponse(vacation models.ApplyVacation) ApplyVacation
 		EndDate:      vacation.EndDate,
 		HalfFirst:    vacation.HalfFirst,
 		HalfLast:     vacation.HalfLast,
-		ProcessState: vacation.VacationProcessStateID,
-		CancelState:  vacation.VacationCancelStateID,
+		ApproveStage: vacation.ApproveStage,
+		RejectState:  vacation.RejectState,
 	}
 }
 
 func MapVacationPlanToResponse(plan models.VacationPlan) VacationPlanResponse {
 	return VacationPlanResponse{
-		ID:                plan.ID,
-		MemberID:          plan.MemberID,
-		MemberName:        plan.Member.Name,
-		ApplyDate:         plan.ApplyDate,
-		Approver1ID:       plan.Approver1ID,
-		ApproverFinalID:   plan.ApproverFinalID,
-		Approver1Name:     plan.Approver1.Name,
-		ApproverFinalName: plan.ApproverFinal.Name,
-		Vacations:         nil,
-		ProcessState:      plan.VacationProcessStateID,
-		CancelState:       plan.VacationCancelStateID,
+		ID:            plan.ID,
+		MemberID:      plan.MemberID,
+		MemberName:    plan.Member.Name,
+		ApplyDate:     plan.ApplyDate,
+		ApproverOrder: plan.ApproverOrder,
+		Vacations:     nil,
+		ApproveStage:  plan.ApproveStage,
+		RejectState:   plan.RejectState,
 	}
 }

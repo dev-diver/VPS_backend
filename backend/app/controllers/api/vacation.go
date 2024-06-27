@@ -12,6 +12,7 @@ import (
 	"cywell.com/vacation-promotion/database"
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
+	"gorm.io/gorm"
 )
 
 func CreateVacationPlanHandler(db *database.Database) fiber.Handler {
@@ -33,36 +34,52 @@ func CreateVacationPlanHandler(db *database.Database) fiber.Handler {
 		}
 
 		vacationPlan := models.VacationPlan{
-			MemberID:               uint(memberID),
-			Approver1ID:            request.Approver1ID,
-			ApproverFinalID:        request.ApproverFinalID,
-			ApplyDate:              time.Now(),
-			VacationProcessStateID: enums.VacationProcessStateApplied,
-			VacationCancelStateID:  enums.VacationCancelStateDefault,
+			MemberID:     uint(memberID),
+			ApplyDate:    time.Now(),
+			ApproveStage: 0,
+			RejectState:  false,
 		}
 
-		if err := db.DB.Create(&vacationPlan).Error; err != nil {
+		err = db.Transaction(func(tx *gorm.DB) error {
+			if err := tx.Create(&vacationPlan).Error; err != nil {
+				return err
+			}
+
+			for i, approverID := range request.Approvers {
+				approverOrder := models.ApproverOrder{
+					VacationPlanID: vacationPlan.ID,
+					Order:          i + 1,
+					MemberID:       uint(approverID),
+				}
+				if err := tx.Create(&approverOrder).Error; err != nil {
+					return err
+				}
+			}
+
+			for _, vacation := range request.Vacations {
+				applyVacation := models.ApplyVacation{
+					VacationPlanID: vacationPlan.ID,
+					MemberID:       uint(memberID),
+					StartDate:      vacation.StartDate,
+					EndDate:        vacation.EndDate,
+					HalfFirst:      vacation.HalfFirst,
+					HalfLast:       vacation.HalfLast,
+					ApproveStage:   0,
+					RejectState:    false,
+					VacationTypeID: enums.VacationTypeNormal,
+				}
+				if err := tx.Create(&applyVacation).Error; err != nil {
+					return err
+				}
+			}
+
+			return nil
+		})
+
+		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 		}
 
-		for _, vacation := range request.Vacations {
-			applyVacation := models.ApplyVacation{
-				VacationPlanID:         vacationPlan.ID,
-				MemberID:               uint(memberID),
-				StartDate:              vacation.StartDate,
-				EndDate:                vacation.EndDate,
-				HalfFirst:              vacation.HalfFirst,
-				HalfLast:               vacation.HalfLast,
-				VacationProcessStateID: enums.VacationProcessStateApplied,
-				VacationCancelStateID:  enums.VacationCancelStateDefault,
-				VacationTypeID:         enums.VacationTypeNormal,
-			}
-			if err := db.DB.Create(&applyVacation).Error; err != nil {
-				return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
-			}
-		}
-
-		//vacationPlan을 vacationPlanResponse로 변환하는 코드
 		vacationPlanResponse := dto.VacationPlanResponse{
 			ID:        vacationPlan.ID,
 			MemberID:  vacationPlan.MemberID,
@@ -249,25 +266,25 @@ func ApproveVacationPlanHandler(db *database.Database) fiber.Handler {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 		}
 
-		if err := ValdiateVacationPlanApproval(c, input, plan); err != nil {
+		if err := ValdiateVacationPlanApproval(c, db, input, plan); err != nil {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 		}
 
 		//거절되었는지 확인
-		if plan.VacationProcessStateID == enums.VacationProcessStateRejected {
+		if plan.RejectState {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "휴가 계획이 거절 상태입니다."})
 		}
 
 		// 휴가 계획 상태 업데이트
-		plan.VacationProcessStateID = uint(input.ApprovalState)
+		plan.ApproveStage = uint(input.ApprovalState)
 		if err := db.DB.Save(&plan).Error; err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "휴가 계획을 승인할 수 없습니다"})
 		}
 
 		// 휴가 상태 업데이트
 		for _, vacation := range plan.ApplyVacations {
-			if vacation.VacationProcessStateID != enums.VacationProcessStateRejected {
-				vacation.VacationProcessStateID = uint(input.ApprovalState)
+			if !vacation.RejectState {
+				vacation.ApproveStage = uint(input.ApprovalState)
 				if err := db.DB.Save(&vacation).Error; err != nil {
 					return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "휴가 상태를 업데이트할 수 없습니다"})
 				}
@@ -293,24 +310,24 @@ func RejectVacationPlanHandler(db *database.Database) fiber.Handler {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 		}
 
-		if err := ValdiateVacationPlanApproval(c, input, plan); err != nil {
+		if err := ValdiateVacationPlanApproval(c, db, input, plan); err != nil {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 		}
 
 		//거절되었는지 확인
-		if plan.VacationProcessStateID == enums.VacationProcessStateRejected {
+		if plan.RejectState {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "휴가 계획이 거절되었습니다"})
 		}
 
 		// 휴가 계획 상태 업데이트
-		plan.VacationProcessStateID = enums.VacationProcessStateRejected
+		plan.RejectState = true
 		if err := db.DB.Save(&plan).Error; err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "휴가 계획을 거절할 수 없습니다"})
 		}
 
 		// 휴가 상태 업데이트
 		for _, vacation := range plan.ApplyVacations {
-			vacation.VacationProcessStateID = enums.VacationProcessStateRejected
+			plan.RejectState = true
 			if err := db.DB.Save(&vacation).Error; err != nil {
 				return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "휴가 상태를 업데이트할 수 없습니다"})
 			}
@@ -335,19 +352,19 @@ func CancelRejectVacationPlanHandler(db *database.Database) fiber.Handler {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 		}
 
-		if err := ValdiateVacationPlanApproval(c, input, plan); err != nil {
+		if err := ValdiateVacationPlanApproval(c, db, input, plan); err != nil {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 		}
 
 		// 휴가 계획 상태 업데이트
-		plan.VacationProcessStateID = input.ApprovalState - 1
+		plan.RejectState = false
 		if err := db.DB.Save(&plan).Error; err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "휴가 계획을 거절할 수 없습니다"})
 		}
 
 		// 휴가 상태 업데이트
 		for _, vacation := range plan.ApplyVacations {
-			vacation.VacationProcessStateID = input.ApprovalState - 1
+			plan.RejectState = false
 			if err := db.DB.Save(&vacation).Error; err != nil {
 				return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "휴가 상태를 업데이트할 수 없습니다"})
 			}
@@ -427,8 +444,7 @@ func RejectVacationHandler(db *database.Database) fiber.Handler {
 		if err := db.DB.First(&vacation, vacationId).Error; err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 		}
-		vacation.VacationProcessStateID = enums.VacationProcessStateRejected
-		vacation.VacationCancelStateID = enums.VacationCancelStateCompleted
+		vacation.RejectState = true
 		if err := db.DB.Save(&vacation).Error; err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 		}
@@ -446,8 +462,7 @@ func CancelRejectVacationHandler(db *database.Database) fiber.Handler {
 		if err := db.DB.First(&vacation, vacationId).Error; err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 		}
-		vacation.VacationProcessStateID = enums.VacationProcessStateApplied //TODO: 이전 레벨로
-		vacation.VacationCancelStateID = enums.VacationCancelStateDefault
+		vacation.RejectState = false
 		if err := db.DB.Save(&vacation).Error; err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 		}
@@ -535,34 +550,29 @@ func ValidateVacationPlanRequest(c *fiber.Ctx, db *database.Database, planID uin
 		return input, plan, err
 	}
 
-	if err := db.DB.Preload("ApplyVacations").First(&plan, planID).Error; err != nil {
+	if err := db.Preload("ApplyVacations").First(&plan, planID).Error; err != nil {
 		return input, plan, err
 	}
 
 	return input, plan, nil
 }
 
-func ValdiateVacationPlanApproval(c *fiber.Ctx, input dto.ApproveVacationPlanRequest, plan models.VacationPlan) error {
-	// 계획 ID 검증
+func ValdiateVacationPlanApproval(c *fiber.Ctx, db *database.Database, input dto.ApproveVacationPlanRequest, plan models.VacationPlan) error {
 
 	// 승인 단계가 올바른지 검증
-	if input.ApprovalState <= plan.VacationProcessStateID && plan.VacationProcessStateID != enums.VacationProcessStateRejected {
+	if input.ApprovalState <= plan.ApproveStage && !plan.RejectState {
 		return errors.New("잘못된 승인 단계 순서입니다")
 	}
 
 	// 지정된 승인자가 승인하는지 검증
 	var expectedMemberID uint
-	if input.ApprovalState == enums.VacationProcessStateFirstApproved {
-		expectedMemberID = plan.Approver1ID
-	} else if input.ApprovalState == enums.VacationProcessStateFinalApproved {
-		expectedMemberID = plan.ApproverFinalID
-	} else {
-		return errors.New("잘못된 승인자입니다")
+	if err := db.Table("approver_orders").Where("vacation_plan_id = ? AND `order` = ?", plan.ID, input.ApprovalState).Pluck("member_id", &expectedMemberID).Error; err != nil {
+		return errors.New("승인 권한을 찾을 수 없습니다")
 	}
 
 	if expectedMemberID != input.MemberID {
 		return errors.New("승인 권한이 없습니다")
 	}
-	// 여기까지 통과했다면 검증 성공
+
 	return nil
 }
