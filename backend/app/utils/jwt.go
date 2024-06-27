@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"time"
 
+	"cywell.com/vacation-promotion/app/dto"
 	"github.com/golang-jwt/jwt/v5"
 )
 
@@ -15,16 +15,15 @@ type Config struct {
 	JWTSecret string `json:"jwt_secret"`
 }
 type Claims struct {
-	UserID uint `json:"user_id"`
+	Auth *dto.LoginResponse `json:"auth"`
 	jwt.RegisteredClaims
 }
 
-func GenerateJWT(userID uint) (string, error) {
-	expirationTime := time.Now().Add(24 * time.Hour)
+func GenerateJWT(authInfo *dto.LoginResponse) (string, error) {
 	claims := &Claims{
-		UserID: userID,
-		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(expirationTime),
+		authInfo,
+		jwt.RegisteredClaims{
+			ID: string(authInfo.Member.ID),
 		},
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
@@ -44,4 +43,8 @@ func SetJWTSecretKey() error {
 	}
 	jwtKey = []byte(config.JWTSecret)
 	return nil
+}
+
+func GetJWTSecretKey() []byte {
+	return jwtKey
 }

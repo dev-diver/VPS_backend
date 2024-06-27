@@ -1,15 +1,12 @@
 package api
 
 import (
-	"time"
-
+	"cywell.com/vacation-promotion/app/auth"
 	"cywell.com/vacation-promotion/app/dto"
-	"cywell.com/vacation-promotion/app/models"
 	"cywell.com/vacation-promotion/app/utils"
 	"cywell.com/vacation-promotion/database"
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
-	"golang.org/x/crypto/bcrypt"
 )
 
 func LoginHandler(db *database.Database) fiber.Handler {
@@ -28,20 +25,19 @@ func LoginHandler(db *database.Database) fiber.Handler {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 		}
 
-		var member models.Member
-		//db에서 사용자 정보 가져오기
-		if err := db.DB.Preload("Groups").Where("email = ?", loginRequest.Email).First(&member).Error; err != nil {
-			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "invalid credentials"})
-		}
-
-		// 비밀번호 검증
-		if err := bcrypt.CompareHashAndPassword([]byte(member.Password), []byte(loginRequest.Password)); err != nil {
-			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "invalid credentials"})
-		}
-
-		token, err := utils.GenerateJWT(member.ID)
+		member, err := auth.GetCorrectMember(loginRequest, c, db)
 		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "could not generate token"})
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": err.Error()})
+		}
+
+		sessionStore, err := auth.SessionStore.Get(c)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "could not get session"})
+		}
+		defer sessionStore.Save()
+		err = sessionStore.Regenerate()
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "could not regenerate session"})
 		}
 
 		groupIDs := make([]uint, len(member.Groups))
@@ -54,15 +50,35 @@ func LoginHandler(db *database.Database) fiber.Handler {
 		loginResponse.CompanyID = member.CompanyID
 		loginResponse.GroupIDs = groupIDs
 
-		cookie := new(fiber.Cookie)
-		cookie.Name = "token"
-		cookie.Value = token
-		cookie.Expires = time.Now().Add(24 * time.Hour)
-		cookie.HTTPOnly = true
-		cookie.Secure = true
-		cookie.SameSite = "Strict"
-		c.Cookie(cookie)
+		token, err := utils.GenerateJWT(&loginResponse)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "could not generate token"})
+		}
 
-		return c.Status(fiber.StatusOK).JSON(loginResponse)
+		c.Cookie(&fiber.Cookie{
+			Name:     "authToken_info",
+			Value:    token,
+			HTTPOnly: false,
+			SameSite: "Lax",
+		})
+
+		return c.SendStatus(fiber.StatusNoContent)
+	}
+}
+
+func LogoutHandler(db *database.Database) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		sessionStore, err := auth.SessionStore.Get(c)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "could not get session"})
+		}
+
+		err = sessionStore.Destroy()
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "could not destroy session"})
+		}
+
+		c.ClearCookie("authToken_info")
+		return c.SendStatus(fiber.StatusNoContent)
 	}
 }

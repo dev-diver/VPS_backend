@@ -1,6 +1,9 @@
 package api
 
 import (
+	"log"
+
+	"cywell.com/vacation-promotion/app/auth"
 	"cywell.com/vacation-promotion/app/dto"
 	"cywell.com/vacation-promotion/app/models"
 	"cywell.com/vacation-promotion/database"
@@ -9,6 +12,13 @@ import (
 
 func CreateCompanyHandler(db *database.Database) fiber.Handler {
 	return func(c *fiber.Ctx) error {
+
+		_, err := auth.CheckToken(c)
+		if err != nil {
+			log.Println(err)
+			return c.SendStatus(401)
+		}
+
 		company := new(models.Company)
 		if err := c.BodyParser(company); err != nil {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
@@ -22,6 +32,7 @@ func CreateCompanyHandler(db *database.Database) fiber.Handler {
 
 func GetCompanyHandler(db *database.Database) fiber.Handler {
 	return func(c *fiber.Ctx) error {
+
 		id := c.Params("companyID")
 		var company models.Company
 		if err := db.DB.Preload("VacationGenerateType").First(&company, id).Error; err != nil {
