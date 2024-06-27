@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"strings"
 
 	"cywell.com/vacation-promotion/app/enums"
 	"cywell.com/vacation-promotion/app/models"
@@ -16,7 +17,12 @@ import (
 func main() {
 
 	app := fiber.New()
-	app.Use(cors.New())
+	app.Use(cors.New(cors.Config{
+		AllowOriginsFunc: func(origin string) bool {
+			return strings.HasPrefix(origin, "http://localhost")
+		},
+		AllowCredentials: true,
+	}))
 
 	if err := utils.SetJWTSecretKey(); err != nil {
 		log.Fatal("failed to set jwt secret")
