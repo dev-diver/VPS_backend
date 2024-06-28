@@ -19,20 +19,19 @@ type VacationRequest struct {
 }
 
 type EditVacationPlanRequest struct {
-	Vacations []VacationEditRequest `json:"vacations"`
+	ApproverOrder []uint `json:"approver_order" validate:"required"`
 }
 
 type VacationEditRequest struct {
-	ID           uint      `json:"id"`
-	StartDate    time.Time `json:"start_date"`
-	EndDate      time.Time `json:"end_date"`
-	HalfFirst    bool      `json:"half_first"`
-	HalfLast     bool      `json:"half_last"`
-	ProcessState string    `json:"process_state"`
+	ID        uint      `json:"id"`
+	StartDate time.Time `json:"start_date"`
+	EndDate   time.Time `json:"end_date"`
+	HalfFirst bool      `json:"half_first"`
+	HalfLast  bool      `json:"half_last"`
 }
 
 type ApproveVacationPlanRequest struct {
-	ApprovalState uint `json:"approval_state" validate:"required"`
+	ApprovalStage uint `json:"approval_stage" validate:"required"`
 	MemberID      uint `json:"member_id" validate:"required"`
 }
 
@@ -41,10 +40,17 @@ type VacationPlanResponse struct {
 	MemberID      uint                    `json:"member_id"`
 	MemberName    string                  `json:"member_name"`
 	ApplyDate     time.Time               `json:"apply_date"`
-	ApproverOrder []models.ApproverOrder  `json:"approver_order"`
+	ApproverOrder []ApproverResponse      `json:"approver_order"`
 	Vacations     []ApplyVacationResponse `json:"vacations"`
 	ApproveStage  uint                    `json:"approve_stage"`
 	RejectState   bool                    `json:"reject_state"`
+}
+
+type ApproverResponse struct {
+	MemberID     uint      `json:"member_id"`
+	MemberName   string    `json:"member_name"`
+	Order        int       `json:"order"`
+	DecisionDate time.Time `json:"decision_date"`
 }
 
 type ApplyVacationResponse struct {
@@ -100,9 +106,18 @@ func MapVacationPlanToResponse(plan models.VacationPlan) VacationPlanResponse {
 		MemberID:      plan.MemberID,
 		MemberName:    plan.Member.Name,
 		ApplyDate:     plan.ApplyDate,
-		ApproverOrder: plan.ApproverOrder,
+		ApproverOrder: nil,
 		Vacations:     nil,
 		ApproveStage:  plan.ApproveStage,
 		RejectState:   plan.RejectState,
+	}
+}
+
+func MapApproverOrderToResponse(order models.ApproverOrder) ApproverResponse {
+	return ApproverResponse{
+		MemberID:     order.MemberID,
+		MemberName:   order.Member.Name,
+		Order:        order.Order,
+		DecisionDate: order.DecisionDate,
 	}
 }

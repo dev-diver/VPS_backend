@@ -108,14 +108,18 @@ func GetVacationPlanHandler(db *database.Database) fiber.Handler {
 		var plan models.VacationPlan //TODO : Preload 최적화
 		if err := db.DB.
 			Preload("Member").
-			Preload("Approver1").
-			Preload("ApproverFinal").
-			Preload("ApplyVacations").First(&plan, planID).Error; err != nil {
+			Preload("ApplyVacations").
+			Preload("ApproverOrders").
+			Preload("ApproverOrders.Member").
+			First(&plan, planID).Error; err != nil {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Vacation plan not found"})
 		}
 
-		fmt.Printf("%+v\n", plan)
 		vacationPlanResponse := dto.MapVacationPlanToResponse(plan)
+
+		for _, ApproveOrder := range plan.ApproverOrders {
+			vacationPlanResponse.ApproverOrder = append(vacationPlanResponse.ApproverOrder, dto.MapApproverOrderToResponse(ApproveOrder))
+		}
 
 		for _, vacation := range plan.ApplyVacations {
 			vacationPlanResponse.Vacations = append(vacationPlanResponse.Vacations, dto.MapApplyVacationToResponse(vacation))
@@ -134,7 +138,7 @@ func GetVacationHandler(db *database.Database) fiber.Handler {
 
 		var vacation models.ApplyVacation
 		if err := db.DB.Preload("Member").First(&vacation, vacationID).Error; err != nil {
-			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Vacation plan not found"})
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Vacation not found"})
 		}
 
 		vacationResponse := dto.MapApplyVacationToResponse(vacation)
@@ -207,31 +211,27 @@ func GetVacationPlansByPeriodHandler(db *database.Database) fiber.Handler {
 		if companyID != 0 {
 			query = query.Joins("JOIN members ON members.id = vacation_plans.member_id").
 				Where("members.company_id = ?", companyID).
-				Preload("Member", "company_id = ?", companyID).
-				Preload("Approver1", "company_id = ?", companyID).
-				Preload("ApproverFinal", "company_id = ?", companyID)
+				Preload("Member", "company_id = ?", companyID)
 		} else if groupID != 0 {
 			query = query.Joins("JOIN group_members ON group_members.member_id = vacation_plans.member_id").
 				Joins("JOIN members ON members.id = group_members.member_id").
 				Where("group_members.group_id = ?", groupID).
-				Preload("Member", "id IN (SELECT member_id FROM group_members WHERE group_id = ?)", groupID).
-				Preload("Approver1").
-				Preload("ApproverFinal")
+				Preload("Member", "id IN (SELECT member_id FROM group_members WHERE group_id = ?)", groupID)
 		} else if memberID != 0 {
 			query = query.Where("vacation_plans.member_id = ?", memberID).
-				Preload("Member").
-				Preload("Approver1").
-				Preload("ApproverFinal")
+				Preload("Member")
 		} else if approverID != 0 {
-			query = query.Where("approver1_id = ? OR approver_final_id = ?", approverID, approverID).
-				Preload("Member").
-				Preload("Approver1").
-				Preload("ApproverFinal")
+			query = query.Joins("JOIN approver_orders ON approver_orders.vacation_plan_id = vacation_plans.id").
+				Where("approver_orders.member_id = ?", approverID).
+				Preload("Member")
 		} else {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "invalid query"})
 		}
 
-		if err := query.Find(&vacationPlans).Error; err != nil {
+		if err := query.
+			Preload("ApproverOrders").
+			Preload("ApproverOrders.Member").
+			Find(&vacationPlans).Error; err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 		}
 
@@ -244,7 +244,12 @@ func GetVacationPlansByPeriodHandler(db *database.Database) fiber.Handler {
 				vacationPlanResponse.Vacations = append(vacationPlanResponse.Vacations, dto.MapApplyVacationToResponse(vacation))
 			}
 
+			for _, ApproveOrder := range plan.ApproverOrders {
+				vacationPlanResponse.ApproverOrder = append(vacationPlanResponse.ApproverOrder, dto.MapApproverOrderToResponse(ApproveOrder))
+			}
+
 			response = append(response, vacationPlanResponse)
+
 		}
 
 		return c.JSON(response)
@@ -276,7 +281,7 @@ func ApproveVacationPlanHandler(db *database.Database) fiber.Handler {
 		}
 
 		// 휴가 계획 상태 업데이트
-		plan.ApproveStage = uint(input.ApprovalState)
+		plan.ApproveStage = uint(input.ApprovalStage)
 		if err := db.DB.Save(&plan).Error; err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "휴가 계획을 승인할 수 없습니다"})
 		}
@@ -284,7 +289,7 @@ func ApproveVacationPlanHandler(db *database.Database) fiber.Handler {
 		// 휴가 상태 업데이트
 		for _, vacation := range plan.ApplyVacations {
 			if !vacation.RejectState {
-				vacation.ApproveStage = uint(input.ApprovalState)
+				vacation.ApproveStage = uint(input.ApprovalStage)
 				if err := db.DB.Save(&vacation).Error; err != nil {
 					return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "휴가 상태를 업데이트할 수 없습니다"})
 				}
@@ -560,13 +565,13 @@ func ValidateVacationPlanRequest(c *fiber.Ctx, db *database.Database, planID uin
 func ValdiateVacationPlanApproval(c *fiber.Ctx, db *database.Database, input dto.ApproveVacationPlanRequest, plan models.VacationPlan) error {
 
 	// 승인 단계가 올바른지 검증
-	if input.ApprovalState <= plan.ApproveStage && !plan.RejectState {
+	if input.ApprovalStage <= plan.ApproveStage && !plan.RejectState {
 		return errors.New("잘못된 승인 단계 순서입니다")
 	}
 
 	// 지정된 승인자가 승인하는지 검증
 	var expectedMemberID uint
-	if err := db.Table("approver_orders").Where("vacation_plan_id = ? AND `order` = ?", plan.ID, input.ApprovalState).Pluck("member_id", &expectedMemberID).Error; err != nil {
+	if err := db.Table("approver_orders").Where("vacation_plan_id = ? AND `order` = ?", plan.ID, input.ApprovalStage).Pluck("member_id", &expectedMemberID).Error; err != nil {
 		return errors.New("승인 권한을 찾을 수 없습니다")
 	}
 

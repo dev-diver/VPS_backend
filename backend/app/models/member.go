@@ -15,6 +15,8 @@ type Member struct {
 	Admin               []*Company            `gorm:"many2many:member_admins"`
 	GivenVacations      []GivenVacation       `gorm:"foreignKey:MemberID"`
 	ApplyVacations      []ApplyVacation       `gorm:"foreignKey:MemberID"`
+	VacationPlans       []VacationPlan        `gorm:"foreignKey:MemberID"`
+	ApproverOrders      []ApproverOrder       `gorm:"foreignKey:MemberID"`
 	Groups              []*Group              `gorm:"many2many:group_members"`
 	NotificationMembers []*NotificationMember `gorm:"foreignKey:MemberID"`
 }
