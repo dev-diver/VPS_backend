@@ -402,7 +402,12 @@ func DeleteVacationPlanHandler(db *database.Database) fiber.Handler {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 		}
 
-		if err := tx.Preload("ApplyVacations").First(&plan, planID).Error; err != nil {
+		if err := tx.First(&plan, planID).Error; err != nil {
+			tx.Rollback()
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		}
+
+		if err := tx.Where("vacation_plan_id = ?", planID).Delete(&models.ApproverOrder{}).Error; err != nil {
 			tx.Rollback()
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 		}
