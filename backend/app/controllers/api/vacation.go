@@ -222,7 +222,7 @@ func GetVacationPlansByPeriodHandler(db *database.Database) fiber.Handler {
 				Preload("Member")
 		} else if approverID != 0 {
 			query = query.Joins("JOIN approver_orders ON approver_orders.vacation_plan_id = vacation_plans.id").
-				Where("approver_orders.member_id = ?", approverID).
+				Where("approver_orders.member_id = ? AND approver_orders.order - 1 = vacation_plans.approve_stage", approverID).
 				Preload("Member")
 		} else {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "invalid query"})
