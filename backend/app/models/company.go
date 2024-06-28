@@ -11,4 +11,5 @@ type Company struct {
 	Admins                 []*Member            `gorm:"many2many:member_admins"`
 	Members                []Member             `gorm:"foreignKey:CompanyID"`
 	Groups                 []Group              `gorm:"foreignKey:CompanyID"`
+	Organizes              []Organize           `gorm:"foreignKey:CompanyID"`
 }
