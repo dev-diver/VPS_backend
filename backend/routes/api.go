@@ -13,6 +13,7 @@ func RegisterAPI(apiRouter fiber.Router, db *database.Database) {
 	registerGroups(apiRouter, db)
 	registerMembers(apiRouter, db)
 	registerVacations(apiRouter, db)
+	registerOrganizes(apiRouter, db)
 }
 
 func registerAuth(apiRouter fiber.Router, db *database.Database) {
@@ -44,6 +45,9 @@ func registerCompanies(apiRouter fiber.Router, db *database.Database) {
 	vacations.Get("/", api.GetVacationsByPeriodHandler(db))
 	vacations.Get("/plans", api.GetVacationPlansByPeriodHandler(db))
 	vacations.Get("/promotions", api.GetPromotionsHandler(db)) //촉진현황 가져오기
+
+	organizes := company.Group("/organizes")
+	organizes.Get("/", api.GetOrganizesHandler(db))
 }
 
 func registerGroups(apiRouter fiber.Router, db *database.Database) {
@@ -102,4 +106,16 @@ func registerVacations(apiRouter fiber.Router, db *database.Database) {
 	vacation.Delete("/", api.DeleteVacationHandler(db))
 	vacation.Post("/reject", api.RejectVacationHandler(db))
 	vacation.Post("/cancel-reject", api.CancelRejectVacationHandler(db))
+}
+
+func registerOrganizes(apiRouter fiber.Router, db *database.Database) {
+
+	organizes := apiRouter.Group("/organizes", auth.AuthCheckMiddleware)
+	organize := organizes.Group("/:organizeID")
+	organize.Put("/", api.UpdateOrganizeHandler(db))  //name 바꾸기
+	organize.Post("/add", api.AddOrganizeHandler(db)) //name
+	organize.Delete("/", api.DeleteOrganizeHandler(db))
+
+	members := organize.Group("/members")
+	members.Post("/", api.UpdateOrganizeMembersHandler(db)) // [id]
 }

@@ -49,6 +49,7 @@ func main() {
 		&models.VacationPlan{},
 		&models.Notification{},
 		&models.ApproverOrder{},
+		&models.Organize{},
 	)
 
 	if err != nil {

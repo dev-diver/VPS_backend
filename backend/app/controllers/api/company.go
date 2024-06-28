@@ -23,9 +23,36 @@ func CreateCompanyHandler(db *database.Database) fiber.Handler {
 		if err := c.BodyParser(company); err != nil {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 		}
-		if err := db.DB.Create(&company).Error; err != nil {
+
+		// 트랜잭션 시작
+		tx := db.DB.Begin()
+		if tx.Error != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "could not start transaction"})
+		}
+
+		// 회사 생성
+		if err := tx.Create(&company).Error; err != nil {
+			tx.Rollback()
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 		}
+
+		// 조직 생성
+		organize := models.Organize{
+			CompanyID: company.ID,
+			Name:      company.Name,
+			ParentID:  nil,
+		}
+
+		if err := tx.Create(&organize).Error; err != nil {
+			tx.Rollback()
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		}
+
+		// 트랜잭션 커밋
+		if err := tx.Commit().Error; err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "could not commit transaction"})
+		}
+
 		return c.Status(fiber.StatusCreated).JSON(company)
 	}
 }
