@@ -18,12 +18,12 @@ func RegisterAPI(apiRouter fiber.Router, db *database.Database) {
 
 func registerAuth(apiRouter fiber.Router, db *database.Database) {
 	auth := apiRouter.Group("/auth")
+	auth.Post("/register", api.MakeAdminHandler(db))
 	auth.Post("/login", api.LoginHandler(db))
 	auth.Post("/logout", api.LogoutHandler(db))
 }
 
 func registerCompanies(apiRouter fiber.Router, db *database.Database) {
-
 	companies := apiRouter.Group("/companies", auth.AuthCheckMiddleware)
 	companies.Post("/", api.CreateCompanyHandler(db))
 
