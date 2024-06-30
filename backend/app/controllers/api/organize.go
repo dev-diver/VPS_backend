@@ -160,14 +160,25 @@ func DeleteOrganizeHandler(db *database.Database) fiber.Handler {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "could not start transaction"})
 		}
 
+		var organize models.Organize
+		if err := tx.First(&organize, organizeID).Error; err != nil {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "organize not found"})
+		}
+
 		// 모든 하위 조직 삭제
 		if err := deleteSubOrganizes(tx, uint(organizeID)); err != nil {
 			tx.Rollback()
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 		}
 
+		// 해당 조직의 멤버 등록 해제
+		if err := tx.Model(&organize).Association("Members").Clear(); err != nil {
+			tx.Rollback()
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		}
+
 		// 조직 자체 삭제
-		if err := tx.Delete(&models.Organize{}, uint(organizeID)).Error; err != nil {
+		if err := tx.Delete(&organize, uint(organizeID)).Error; err != nil {
 			tx.Rollback()
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 		}
@@ -225,7 +236,7 @@ func UpdateOrganizeMembersHandler(db *database.Database) fiber.Handler {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 		}
 
-		if err := db.DB.Model(&models.Organize{}).Association("Members").Replace(&members); err != nil {
+		if err := db.DB.Model(&organize).Association("Members").Replace(&members); err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 		}
 
