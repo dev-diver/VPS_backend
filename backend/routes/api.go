@@ -48,6 +48,8 @@ func registerCompanies(apiRouter fiber.Router, db *database.Database) {
 
 	organizes := company.Group("/organizes")
 	organizes.Get("/", api.GetOrganizesHandler(db))
+	organize := organizes.Group("/:organizeID")
+	organize.Post("/add", api.AddOrganizeHandler(db)) //name
 }
 
 func registerGroups(apiRouter fiber.Router, db *database.Database) {
@@ -112,8 +114,7 @@ func registerOrganizes(apiRouter fiber.Router, db *database.Database) {
 
 	organizes := apiRouter.Group("/organizes", auth.AuthCheckMiddleware)
 	organize := organizes.Group("/:organizeID")
-	organize.Put("/", api.UpdateOrganizeHandler(db))  //name 바꾸기
-	organize.Post("/add", api.AddOrganizeHandler(db)) //name
+	organize.Put("/", api.UpdateOrganizeHandler(db)) //name 바꾸기
 	organize.Delete("/", api.DeleteOrganizeHandler(db))
 
 	members := organize.Group("/members")
