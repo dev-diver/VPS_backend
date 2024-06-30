@@ -3,6 +3,7 @@ package api
 import (
 	"strconv"
 
+	"cywell.com/vacation-promotion/app/dto"
 	"cywell.com/vacation-promotion/app/models"
 	"cywell.com/vacation-promotion/database"
 	"github.com/gofiber/fiber/v2"
@@ -52,7 +53,7 @@ func buildTree(organizes []models.Organize) models.Organize {
 	}
 
 	for _, tempOrg := range orgMap {
-		if tempOrg.Organize.ParentID == nil {
+		if tempOrg.Organize.ParentID != nil {
 			parent, ok := orgMap[*tempOrg.Organize.ParentID]
 			if ok {
 				parent.Children[tempOrg.Organize.ID] = tempOrg
@@ -96,20 +97,20 @@ func AddOrganizeHandler(db *database.Database) fiber.Handler {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid companyID"})
 		}
 
-		organizeRequest := models.Organize{}
+		organizeRequest := dto.OrganizeRequest{}
 		if err := c.BodyParser(&organizeRequest); err != nil {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 		}
 
-		var parentID *uint
-		if organizeID != 0 {
-			ParentIdUint := uint(organizeID)
-			parentID = &ParentIdUint
+		parentID := uint(organizeID)
+
+		organize := models.Organize{
+			Name:      organizeRequest.Name,
+			CompanyID: uint(companyID),
+			ParentID:  &parentID,
 		}
 
-		organizeRequest.ParentID = parentID
-		organizeRequest.CompanyID = uint(companyID)
-		if err := db.DB.Create(&organizeRequest).Error; err != nil {
+		if err := db.DB.Create(&organize).Error; err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 		}
 
