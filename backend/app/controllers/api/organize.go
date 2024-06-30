@@ -166,12 +166,6 @@ func DeleteOrganizeHandler(db *database.Database) fiber.Handler {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 		}
 
-		// 멤버 삭제
-		if err := tx.Where("organize_id = ?", uint(organizeID)).Delete(&models.Member{}).Error; err != nil {
-			tx.Rollback()
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
-		}
-
 		// 조직 자체 삭제
 		if err := tx.Delete(&models.Organize{}, uint(organizeID)).Error; err != nil {
 			tx.Rollback()
