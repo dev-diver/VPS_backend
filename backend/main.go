@@ -25,6 +25,7 @@ func main() {
 	}))
 
 	if err := utils.SetJWTSecretKey(); err != nil {
+		fmt.Println(err.Error())
 		log.Fatal("failed to set jwt secret")
 	}
 
