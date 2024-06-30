@@ -38,7 +38,7 @@ func MakeAdminHandler(db *database.Database) fiber.Handler {
 
 		member := models.Member{
 			CompanyID:  uint(companyID),
-			OrganizeID: organize.ID,
+			OrganizeID: &organize.ID,
 			Name:       "관리자",
 			Email:      "admin@" + company.Name + ".co.kr",
 			Password:   string(hashedPassword),
