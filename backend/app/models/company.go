@@ -9,7 +9,7 @@ type Company struct {
 	VacationGenerateTypeID uint                 `gorm:"index"`
 	VacationGenerateType   VacationGenerateType `gorm:"foreignKey:VacationGenerateTypeID"`
 	Admins                 []*Member            `gorm:"many2many:member_admins"`
-	Members                []Member             `gorm:"foreignKey:CompanyID"`
+	Members                []*Member            `gorm:"foreignKey:CompanyID"`
 	Groups                 []*Group             `gorm:"foreignKey:CompanyID"`
-	Organizes              []Organize           `gorm:"foreignKey:CompanyID"`
+	Organizes              []*Organize          `gorm:"foreignKey:CompanyID"`
 }
