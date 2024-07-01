@@ -27,20 +27,27 @@ func GetOrganizesHandler(db *database.Database) fiber.Handler {
 	}
 }
 
-func GetOrganizes(c *fiber.Ctx, db *database.Database, companyID uint) ([]models.Organize, error) {
+func GetOrganizes(c *fiber.Ctx, db *database.Database, companyID uint) ([]dto.OrganizeResponse, error) {
 	var organizes []models.Organize
-	if err := db.DB.Where("company_id = ?", companyID).Find(&organizes).Error; err != nil {
+	if err := db.DB.Preload("Members").Where("company_id = ?", companyID).Find(&organizes).Error; err != nil {
 		return nil, err
 	}
-	return organizes, nil
+
+	organizeDTOs := make([]dto.OrganizeResponse, 0, len(organizes))
+	for _, organize := range organizes {
+		organizeDTO := dto.MapOrganizeToResponse(organize)
+		organizeDTOs = append(organizeDTOs, organizeDTO)
+	}
+
+	return organizeDTOs, nil
 }
 
 type TempOrganize struct {
-	Organize *models.Organize
+	Organize *dto.OrganizeResponse
 	Children map[uint]*TempOrganize
 }
 
-func buildTree(organizes []models.Organize) models.Organize {
+func buildTree(organizes []dto.OrganizeResponse) dto.OrganizeResponse {
 	orgMap := make(map[uint]*TempOrganize)
 
 	// 모든 조직을 TempOrganize 구조체에 저장
@@ -61,6 +68,7 @@ func buildTree(organizes []models.Organize) models.Organize {
 		}
 	}
 
+	//루트 찾기
 	tempChild := organizes[0]
 	for tempChild.ParentID != nil {
 		tempChild = *orgMap[*tempChild.ParentID].Organize
@@ -71,7 +79,7 @@ func buildTree(organizes []models.Organize) models.Organize {
 	// TempOrganize 구조체에서 실제 Organize 구조체로 변환
 	for _, tempOrg := range orgMap {
 		for _, child := range tempOrg.Children {
-			tempOrg.Organize.Children = append(tempOrg.Organize.Children, child.Organize)
+			tempOrg.Organize.Children = append(tempOrg.Organize.Children, *child.Organize)
 		}
 	}
 
@@ -80,7 +88,7 @@ func buildTree(organizes []models.Organize) models.Organize {
 	}
 
 	// 루트가 없는 경우 빈 Organize 반환 (또는 적절한 오류 처리)
-	return models.Organize{}
+	return dto.OrganizeResponse{}
 }
 
 func AddOrganizeHandler(db *database.Database) fiber.Handler {
