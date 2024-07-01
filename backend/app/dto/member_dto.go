@@ -33,14 +33,14 @@ func MapMemberToDTO(member *models.Member) MemberResponse {
 	}
 }
 
-func MapMembersToDTO(members []*models.Member) []MemberResponse {
-	var memberDTOs []MemberResponse
+func MapMembersToDTO(members []*models.Member) []*MemberResponse {
+	var memberDTOs []*MemberResponse
 	if members == nil {
 		return memberDTOs
 	}
 	for _, member := range members {
 		memberDTO := MapMemberToDTO(member)
-		memberDTOs = append(memberDTOs, memberDTO)
+		memberDTOs = append(memberDTOs, &memberDTO)
 	}
 	return memberDTOs
 }

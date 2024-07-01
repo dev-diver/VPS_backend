@@ -7,15 +7,14 @@ type OrganizeRequest struct {
 }
 
 type OrganizeResponse struct {
-	ID       uint               `json:"organize_id"`
-	Name     string             `json:"organize_name"`
-	ParentID *uint              `json:"parent_id"`
-	Members  []MemberResponse   `json:"members,omitempty"`
-	Children []OrganizeResponse `json:"children,omitempty"`
+	ID       uint                `json:"organize_id"`
+	Name     string              `json:"organize_name"`
+	ParentID *uint               `json:"parent_id"`
+	Members  []*MemberResponse   `json:"members,omitempty"`
+	Children []*OrganizeResponse `json:"children,omitempty"`
 }
 
 func MapOrganizeToResponse(organize models.Organize) OrganizeResponse {
-
 	return OrganizeResponse{
 		ID:       organize.ID,
 		Name:     organize.Name,
