@@ -190,6 +190,12 @@ func deleteSubOrganizes(tx *gorm.DB, parentID uint) error {
 			return err
 		}
 
+		// 해당 조직의 멤버 등록 해제
+		if err := tx.Model(&subOrganize).Association("Members").Clear(); err != nil {
+			tx.Rollback()
+			return err
+		}
+
 		// 해당 조직 삭제
 		if err := tx.Delete(&subOrganize).Error; err != nil {
 			return err
