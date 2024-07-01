@@ -22,7 +22,10 @@ func GetOrganizesHandler(db *database.Database) fiber.Handler {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 		}
 
-		root := buildTree(organizes)
+		root, err := buildTree(organizes)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		}
 		return c.JSON(root)
 	}
 }
@@ -47,7 +50,7 @@ type TempOrganize struct {
 	Children map[uint]*TempOrganize
 }
 
-func buildTree(organizes []dto.OrganizeResponse) dto.OrganizeResponse {
+func buildTree(organizes []dto.OrganizeResponse) (dto.OrganizeResponse, error) {
 	orgMap := make(map[uint]*TempOrganize)
 
 	// 모든 조직을 TempOrganize 구조체에 저장
@@ -62,16 +65,21 @@ func buildTree(organizes []dto.OrganizeResponse) dto.OrganizeResponse {
 	for _, tempOrg := range orgMap {
 		if tempOrg.Organize.ParentID != nil {
 			parent, ok := orgMap[*tempOrg.Organize.ParentID]
-			if ok {
-				parent.Children[tempOrg.Organize.ID] = tempOrg
+			if !ok {
+				return dto.OrganizeResponse{}, fiber.NewError(fiber.StatusInternalServerError, "parent not found")
 			}
+			parent.Children[tempOrg.Organize.ID] = tempOrg
 		}
 	}
 
 	//루트 찾기
 	tempChild := organizes[0]
 	for tempChild.ParentID != nil {
-		tempChild = *orgMap[*tempChild.ParentID].Organize
+		parent, ok := orgMap[*tempChild.ParentID]
+		if !ok {
+			return dto.OrganizeResponse{}, fiber.NewError(fiber.StatusInternalServerError, "parent not found")
+		}
+		tempChild = *parent.Organize
 	}
 
 	root := orgMap[tempChild.ID]
@@ -83,12 +91,12 @@ func buildTree(organizes []dto.OrganizeResponse) dto.OrganizeResponse {
 		}
 	}
 
-	if root != nil {
-		return *root.Organize
+	if root == nil {
+		return dto.OrganizeResponse{}, fiber.NewError(fiber.StatusInternalServerError, "root not found")
+
 	}
 
-	// 루트가 없는 경우 빈 Organize 반환 (또는 적절한 오류 처리)
-	return dto.OrganizeResponse{}
+	return *root.Organize, nil
 }
 
 func AddOrganizeHandler(db *database.Database) fiber.Handler {
