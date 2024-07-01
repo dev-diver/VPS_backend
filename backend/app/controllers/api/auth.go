@@ -94,7 +94,7 @@ func LoginHandler(db *database.Database) fiber.Handler {
 			groupIDs[i] = group.ID
 		}
 
-		memberResponse := dto.MapMemberToDTO(member)
+		memberResponse := dto.MapMemberToDTO(&member)
 		loginResponse.Member = memberResponse
 		loginResponse.CompanyID = member.CompanyID
 		loginResponse.GroupIDs = groupIDs

@@ -109,7 +109,7 @@ func DeleteCompanyHandler(db *database.Database) fiber.Handler {
 func GetCompanyMembersHandler(db *database.Database) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		companyID := c.Params("companyID")
-		var members []models.Member
+		var members []*models.Member
 		if err := db.DB.Where("company_id = ?", companyID).Find(&members).Error; err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 		}

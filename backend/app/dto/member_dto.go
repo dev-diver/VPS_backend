@@ -20,7 +20,10 @@ type MemberResponse struct {
 	IsActive bool      `json:"is_active"`
 }
 
-func MapMemberToDTO(member models.Member) MemberResponse {
+func MapMemberToDTO(member *models.Member) MemberResponse {
+	if member == nil {
+		return MemberResponse{}
+	}
 	return MemberResponse{
 		ID:       member.ID,
 		Name:     member.Name,
@@ -30,8 +33,11 @@ func MapMemberToDTO(member models.Member) MemberResponse {
 	}
 }
 
-func MapMembersToDTO(members []models.Member) []MemberResponse {
+func MapMembersToDTO(members []*models.Member) []MemberResponse {
 	var memberDTOs []MemberResponse
+	if members == nil {
+		return memberDTOs
+	}
 	for _, member := range members {
 		memberDTO := MapMemberToDTO(member)
 		memberDTOs = append(memberDTOs, memberDTO)
