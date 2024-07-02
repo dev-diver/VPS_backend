@@ -271,17 +271,75 @@ func ApproveVacationPlanHandler(db *database.Database) fiber.Handler {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 		}
 
-		if err := ValdiateVacationPlanApproval(c, db, input, plan); err != nil {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
-		}
-
 		//거절되었는지 확인
 		if plan.RejectState {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "휴가 계획이 거절 상태입니다."})
 		}
 
+		//승인 상태 확인
+		if err := ValdiateVacationPlanApproval(c, db, input, plan); err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+		}
+
 		// 휴가 계획 상태 업데이트
 		plan.ApproveStage = uint(input.ApprovalStage)
+		plan.RejectState = false
+		if err := db.DB.Save(&plan).Error; err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "휴가 계획을 승인할 수 없습니다"})
+		}
+
+		// 휴가 상태 업데이트
+		for _, vacation := range plan.ApplyVacations {
+			if !vacation.RejectState {
+				vacation.ApproveStage = uint(input.ApprovalStage)
+				if err := db.DB.Save(&vacation).Error; err != nil {
+					return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "휴가 상태를 업데이트할 수 없습니다"})
+				}
+			}
+		}
+
+		return c.JSON(plan)
+	}
+}
+
+func CancelApproveVacationPlanHandler(db *database.Database) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+
+		//ID 이상 검증
+		planID, err := strconv.ParseUint(c.Params("planID"), 10, 64)
+		if err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "잘못된 계획 ID입니다"})
+		}
+
+		//Vacation 검증
+		input, plan, err := ValidateVacationPlanRequest(c, db, planID)
+		if err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+		}
+
+		//거절 상태 확인
+		if plan.RejectState {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "휴가 계획이 거절 상태입니다."})
+		}
+
+		//승인 단계 확인
+		if input.ApprovalStage != plan.ApproveStage {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "잘못된 승인단계입니다."})
+		}
+
+		// 지정된 승인자가 승인하는지 검증
+		var expectedMemberID uint
+		if err := db.Table("approver_orders").Where("vacation_plan_id = ? AND `order` = ?", plan.ID, input.ApprovalStage).Pluck("member_id", &expectedMemberID).Error; err != nil {
+			return errors.New("승인 권한을 찾을 수 없습니다")
+		}
+
+		if expectedMemberID != input.MemberID {
+			return errors.New("승인 권한이 없습니다")
+		}
+
+		// 휴가 계획 상태 업데이트
+		plan.ApproveStage = uint(input.ApprovalStage - 1)
+		plan.RejectState = false
 		if err := db.DB.Save(&plan).Error; err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "휴가 계획을 승인할 수 없습니다"})
 		}
@@ -315,13 +373,9 @@ func RejectVacationPlanHandler(db *database.Database) fiber.Handler {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 		}
 
+		//승인 단계 확인
 		if err := ValdiateVacationPlanApproval(c, db, input, plan); err != nil {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
-		}
-
-		//거절되었는지 확인
-		if plan.RejectState {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "휴가 계획이 거절되었습니다"})
 		}
 
 		// 휴가 계획 상태 업데이트
@@ -570,7 +624,7 @@ func ValidateVacationPlanRequest(c *fiber.Ctx, db *database.Database, planID uin
 func ValdiateVacationPlanApproval(c *fiber.Ctx, db *database.Database, input dto.ApproveVacationPlanRequest, plan models.VacationPlan) error {
 
 	// 승인 단계가 올바른지 검증
-	if input.ApprovalStage <= plan.ApproveStage && !plan.RejectState {
+	if input.ApprovalStage <= plan.ApproveStage {
 		return errors.New("잘못된 승인 단계 순서입니다")
 	}
 
