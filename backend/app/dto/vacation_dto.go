@@ -114,10 +114,16 @@ func MapVacationPlanToResponse(plan models.VacationPlan) VacationPlanResponse {
 }
 
 func MapApproverOrderToResponse(order models.ApproverOrder) ApproverResponse {
+	var decisionDate time.Time
+	if order.DecisionDate != nil {
+		decisionDate = *order.DecisionDate
+	} else {
+		decisionDate = time.Time{} // 빈 time.Time 값
+	}
 	return ApproverResponse{
 		MemberID:     order.MemberID,
 		MemberName:   order.Member.Name,
 		Order:        order.Order,
-		DecisionDate: order.DecisionDate,
+		DecisionDate: decisionDate,
 	}
 }

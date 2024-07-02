@@ -11,5 +11,5 @@ type ApproverOrder struct {
 	Order          int          `gorm:"not null;"`
 	MemberID       uint         `gorm:"index;not null;"`
 	Member         Member       `gorm:"foreignKey:MemberID"`
-	DecisionDate   time.Time    `gorm:"type:date"`
+	DecisionDate   *time.Time   `gorm:"type:date;null"`
 }
