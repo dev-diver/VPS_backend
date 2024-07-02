@@ -14,7 +14,7 @@ type Database struct {
 
 func InitDB() (*Database, error) {
 	var db *gorm.DB
-	config, err := LoadConfig("database/config.json")
+	config, err := LoadConfig("./database/config.json")
 	if err != nil {
 		log.Fatalf("Failed to load config: %v", err)
 	}

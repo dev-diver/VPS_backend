@@ -32,7 +32,7 @@ func GenerateJWT(authInfo *dto.LoginResponse) (string, error) {
 
 func SetJWTSecretKey() error {
 	config := &Config{}
-	file, err := os.ReadFile("config/secret.json")
+	file, err := os.ReadFile("./config/secret.json")
 	if err != nil {
 		return fmt.Errorf("could not read config file: %w", err)
 	}
