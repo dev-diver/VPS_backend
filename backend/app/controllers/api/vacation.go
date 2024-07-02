@@ -45,7 +45,7 @@ func CreateVacationPlanHandler(db *database.Database) fiber.Handler {
 				return err
 			}
 
-			for i, approverID := range request.Approvers {
+			for i, approverID := range request.ApproverOrder {
 				approverOrder := models.ApproverOrder{
 					VacationPlanID: vacationPlan.ID,
 					Order:          i + 1,
@@ -435,13 +435,80 @@ func CancelRejectVacationPlanHandler(db *database.Database) fiber.Handler {
 
 func UpdateVacationPlanHandler(db *database.Database) fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		return c.SendStatus(fiber.StatusNotImplemented)
+		planID, err := strconv.ParseUint(c.Params("planID"), 10, 64)
+		if err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "잘못된 ID입니다"})
+		}
+
+		var request dto.EditVacationPlanRequest
+		if err := c.BodyParser(&request); err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+		}
+
+		var vacationPlan models.VacationPlan
+		if err := db.DB.First(&vacationPlan, planID).Error; err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		}
+
+		approverOrders := make([]models.ApproverOrder, 0)
+		err = db.Transaction(func(tx *gorm.DB) error {
+
+			//기존 order 삭제
+			if err := tx.Where("vacation_plan_id = ?", vacationPlan.ID).Delete(&models.ApproverOrder{}).Error; err != nil {
+				return err
+			}
+
+			//새 order 등록
+			for i, approverID := range request.ApproverOrder {
+				approverOrder := models.ApproverOrder{
+					VacationPlanID: vacationPlan.ID,
+					Order:          i + 1,
+					MemberID:       uint(approverID),
+				}
+				if err := tx.Create(&approverOrder).Error; err != nil {
+					return err
+				}
+				approverOrders = append(approverOrders, approverOrder)
+			}
+			return nil
+		})
+
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		}
+
+		return c.JSON(approverOrders)
 	}
 }
 
 func UpdateVacationHandler(db *database.Database) fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		return c.SendStatus(fiber.StatusNotImplemented)
+		vacationID, err := strconv.ParseUint(c.Params("vacationID"), 10, 64)
+		if err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "잘못된 ID입니다"})
+		}
+
+		var editVacationRequest dto.VacationRequest
+		if err := c.BodyParser(&editVacationRequest); err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+		}
+
+		var vacation models.ApplyVacation
+		if err := db.DB.First(&vacation, vacationID).Error; err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		}
+
+		vacation.StartDate = editVacationRequest.StartDate
+		vacation.EndDate = editVacationRequest.EndDate
+		vacation.HalfFirst = editVacationRequest.HalfFirst
+		vacation.HalfLast = editVacationRequest.HalfLast
+
+		if err := db.DB.Save(&vacation).Error; err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		}
+
+		vacationResponse := dto.MapApplyVacationToResponse(vacation)
+		return c.JSON(vacationResponse)
 	}
 }
 

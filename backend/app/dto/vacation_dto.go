@@ -7,8 +7,8 @@ import (
 )
 
 type CreateVacationPlanRequest struct {
-	Vacations []VacationRequest `json:"vacations" validate:"required"`
-	Approvers []uint            `json:"approvers" validate:"required"`
+	Vacations     []VacationRequest `json:"vacations" validate:"required"`
+	ApproverOrder []uint            `json:"approver_order" validate:"required"`
 }
 
 type VacationRequest struct {
