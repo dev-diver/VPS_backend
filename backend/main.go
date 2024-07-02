@@ -61,8 +61,14 @@ func main() {
 	api := app.Group("/api")
 	routes.RegisterAPI(api, db)
 
-	app.Get("/", func(c *fiber.Ctx) error {
-		return c.SendString("Hello, World!")
+	app.Static("/", "../dist/front_web/browser/")
+
+	app.Use(func(c *fiber.Ctx) error {
+		// Return index.html for all other routes
+		if err := c.SendFile("../dist/front_web/browser/index.html"); err != nil {
+			return c.Status(fiber.StatusInternalServerError).SendString(err.Error())
+		}
+		return nil
 	})
 
 	app.Listen(":3000")
