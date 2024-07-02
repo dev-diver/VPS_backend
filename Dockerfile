@@ -22,7 +22,7 @@ RUN go mod tidy
 RUN go build -o server
 
 # 단계 2: 실행 단계
-FROM ubuntu:latest
+FROM ubuntu:20.04
 
 # 빌드 단계에서 빌드된 애플리케이션 복사
 COPY --from=builder /app/backend/server /app/backend/server
