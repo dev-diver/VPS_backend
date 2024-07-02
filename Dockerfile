@@ -31,4 +31,4 @@ COPY --from=builder /app/backend/server /app/backend/server
 CMD ["/app/backend/server"]
 
 # 포트 설정
-EXPOSE 8080
+EXPOSE 3000
