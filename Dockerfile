@@ -27,9 +27,6 @@ FROM ubuntu
 # 빌드 단계에서 빌드된 애플리케이션 복사
 COPY --from=builder /app/backend/server /app/backend/server
 
-COPY config/secret.json /app/backend/config/secret.json
-COPY database/config.json /app/backend/database/config.json
-
 # 애플리케이션 실행
 CMD ["/app/backend/server"]
 
