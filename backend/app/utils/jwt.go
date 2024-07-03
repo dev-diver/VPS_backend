@@ -1,12 +1,12 @@
 package utils
 
 import (
-	"encoding/json"
-	"fmt"
+	"log"
 	"os"
 
 	"cywell.com/vacation-promotion/app/dto"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/joho/godotenv"
 )
 
 var jwtKey []byte
@@ -31,17 +31,14 @@ func GenerateJWT(authInfo *dto.LoginResponse) (string, error) {
 }
 
 func SetJWTSecretKey() error {
-	config := &Config{}
-	file, err := os.ReadFile("./config/secret.json")
+
+	err := godotenv.Load("./config/.env")
 	if err != nil {
-		return fmt.Errorf("could not read config file: %w", err)
+		log.Fatalf("Error loading .env file")
 	}
 
-	err = json.Unmarshal(file, &config)
-	if err != nil {
-		return fmt.Errorf("could not unmarshal config JSON: %w", err)
-	}
-	jwtKey = []byte(config.JWTSecret)
+	secret := os.Getenv("JWT_SECRET")
+	jwtKey = []byte(secret)
 	return nil
 }
 
