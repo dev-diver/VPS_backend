@@ -27,8 +27,5 @@ FROM ubuntu
 # 빌드 단계에서 빌드된 애플리케이션 복사
 COPY --from=builder /app/backend/server /app/backend/server
 
-# 애플리케이션 실행
-CMD ["/app/backend/server"]
-
 # 포트 설정
 EXPOSE 3000
