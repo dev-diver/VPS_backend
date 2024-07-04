@@ -385,7 +385,7 @@ func CancelApproveVacationPlanHandler(db *database.Database) fiber.Handler {
 		// 휴가 상태 업데이트
 		for _, vacation := range plan.ApplyVacations {
 			if !vacation.RejectState {
-				vacation.ApproveStage = uint(input.ApprovalStage)
+				vacation.ApproveStage = uint(input.ApprovalStage) - 1
 				if err := db.DB.Save(&vacation).Error; err != nil {
 					return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "휴가 상태를 업데이트할 수 없습니다"})
 				}
@@ -431,7 +431,8 @@ func RejectVacationPlanHandler(db *database.Database) fiber.Handler {
 
 		// 휴가 상태 업데이트
 		for _, vacation := range plan.ApplyVacations {
-			plan.RejectState = true
+			vacation.RejectState = true
+			vacation.ApproveStage = uint(input.ApprovalStage)
 			if err := db.DB.Save(&vacation).Error; err != nil {
 				return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "휴가 상태를 업데이트할 수 없습니다"})
 			}
@@ -476,7 +477,8 @@ func CancelRejectVacationPlanHandler(db *database.Database) fiber.Handler {
 
 		// 휴가 상태 업데이트
 		for _, vacation := range plan.ApplyVacations {
-			plan.RejectState = false
+			vacation.RejectState = false
+			vacation.ApproveStage = uint(input.ApprovalStage) - 1
 			if err := db.DB.Save(&vacation).Error; err != nil {
 				return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "휴가 상태를 업데이트할 수 없습니다"})
 			}
