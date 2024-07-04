@@ -196,7 +196,14 @@ func GetVacationPlansByPeriodHandler(db *database.Database) fiber.Handler {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 		}
 
-		rejected := c.Query("rejected") == "true"
+		rejectedQ := c.Query("rejected")
+		var rejected bool
+		if rejectedQ == "true" {
+			rejected = true
+		} else if rejectedQ == "false" {
+			rejected = false
+		}
+
 		approved := c.Query("approved") == "true"
 
 		var startDate, endDate time.Time
@@ -237,10 +244,13 @@ func GetVacationPlansByPeriodHandler(db *database.Database) fiber.Handler {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "invalid query"})
 		}
 
+		if rejectedQ != "" {
+			query = query.Where("reject_state = ?", rejected)
+		}
+
 		if err := query.
 			Preload("ApproverOrders").
 			Preload("ApproverOrders.Member").
-			Where("reject_state = ?", rejected).
 			Find(&vacationPlans).Error; err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 		}
