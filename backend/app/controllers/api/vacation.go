@@ -196,6 +196,9 @@ func GetVacationPlansByPeriodHandler(db *database.Database) fiber.Handler {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 		}
 
+		rejected := c.Query("rejected") == "true"
+		approved := c.Query("approved") == "true"
+
 		var startDate, endDate time.Time
 		if month != 0 {
 			startDate = time.Date(year, time.Month(month), 1, 0, 0, 0, 0, time.UTC)
@@ -206,7 +209,8 @@ func GetVacationPlansByPeriodHandler(db *database.Database) fiber.Handler {
 		}
 
 		var vacationPlans []models.VacationPlan //TODO : Preload 최적화
-		query := db.DB.Preload("ApplyVacations", "start_date <= ? AND end_date >= ?", endDate, startDate)
+		query := db.DB.
+			Preload("ApplyVacations", "start_date <= ? AND end_date >= ?", endDate, startDate)
 
 		if companyID != 0 {
 			query = query.Joins("JOIN members ON members.id = vacation_plans.member_id").
@@ -222,8 +226,13 @@ func GetVacationPlansByPeriodHandler(db *database.Database) fiber.Handler {
 				Preload("Member")
 		} else if approverID != 0 {
 			query = query.Joins("JOIN approver_orders ON approver_orders.vacation_plan_id = vacation_plans.id").
-				Where("approver_orders.member_id = ? AND approver_orders.order - 1 = vacation_plans.approve_stage", approverID).
+				Where("approver_orders.member_id = ? ", approverID).
 				Preload("Member")
+			if !approved {
+				query = query.Where("vacation_plans.approve_stage = approver_orders.order - 1")
+			} else {
+				query = query.Where("vacation_plans.approve_stage > approver_orders.order - 1")
+			}
 		} else {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "invalid query"})
 		}
@@ -231,6 +240,7 @@ func GetVacationPlansByPeriodHandler(db *database.Database) fiber.Handler {
 		if err := query.
 			Preload("ApproverOrders").
 			Preload("ApproverOrders.Member").
+			Where("reject_state = ?", rejected).
 			Find(&vacationPlans).Error; err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 		}
@@ -496,6 +506,10 @@ func UpdateVacationHandler(db *database.Database) fiber.Handler {
 		var vacation models.ApplyVacation
 		if err := db.DB.First(&vacation, vacationID).Error; err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		}
+
+		if vacation.RejectState {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "거절된 휴가는 수정할 수 없습니다"})
 		}
 
 		vacation.StartDate = editVacationRequest.StartDate
