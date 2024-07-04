@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"net"
 	"strings"
 
 	"cywell.com/vacation-promotion/app/enums"
@@ -17,9 +18,15 @@ import (
 func main() {
 
 	app := fiber.New()
+
+	hostIP, err := getLocalIP()
+	if err != nil {
+		log.Fatalf("Failed to get local IP: %v", err)
+	}
+
 	app.Use(cors.New(cors.Config{
 		AllowOriginsFunc: func(origin string) bool {
-			return strings.HasPrefix(origin, "http://localhost")
+			return strings.HasPrefix(origin, "http://localhost") || strings.HasPrefix(origin, "http://"+hostIP)
 		},
 		AllowCredentials: true,
 	}))
@@ -151,4 +158,21 @@ func MigrateAndSeed(db *database.Database) error {
 	}
 
 	return nil
+}
+
+func getLocalIP() (string, error) {
+	addrs, err := net.InterfaceAddrs()
+	if err != nil {
+		return "", err
+	}
+
+	for _, addr := range addrs {
+		if ipNet, ok := addr.(*net.IPNet); ok && !ipNet.IP.IsLoopback() {
+			if ipNet.IP.To4() != nil {
+				return ipNet.IP.String(), nil
+			}
+		}
+	}
+
+	return "", nil
 }
