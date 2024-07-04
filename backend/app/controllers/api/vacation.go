@@ -217,7 +217,8 @@ func GetVacationPlansByPeriodHandler(db *database.Database) fiber.Handler {
 
 		var vacationPlans []models.VacationPlan //TODO : Preload 최적화
 		query := db.DB.
-			Preload("ApplyVacations", "start_date <= ? AND end_date >= ?", endDate, startDate)
+			Preload("ApplyVacations").
+			Where("apply_date >= ? AND apply_date <= ?", startDate, endDate)
 
 		if companyID != 0 {
 			query = query.Joins("JOIN members ON members.id = vacation_plans.member_id").
