@@ -304,6 +304,15 @@ func ApproveVacationPlanHandler(db *database.Database) fiber.Handler {
 		// 휴가 계획 상태 업데이트
 		plan.ApproveStage = uint(input.ApprovalStage)
 		plan.RejectState = false
+
+		//ApproverOrders 중에, ApproveStage보다 높은 order가 있는지 확인
+		var nextApproverOrder models.ApproverOrder
+		if err := db.DB.Where("vacation_plan_id = ? AND `order` = ?", plan.ID, input.ApprovalStage+1).First(&nextApproverOrder).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				plan.CompleteState = true
+			}
+		}
+
 		if err := db.DB.Save(&plan).Error; err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "휴가 계획을 승인할 수 없습니다"})
 		}

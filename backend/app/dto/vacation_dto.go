@@ -44,6 +44,7 @@ type VacationPlanResponse struct {
 	Vacations     []ApplyVacationResponse `json:"vacations"`
 	ApproveStage  uint                    `json:"approve_stage"`
 	RejectState   bool                    `json:"reject_state"`
+	CompleteState bool                    `json:"complete_state"`
 }
 
 type ApproverResponse struct {
@@ -110,6 +111,7 @@ func MapVacationPlanToResponse(plan models.VacationPlan) VacationPlanResponse {
 		Vacations:     nil,
 		ApproveStage:  plan.ApproveStage,
 		RejectState:   plan.RejectState,
+		CompleteState: plan.CompleteState,
 	}
 }
 
