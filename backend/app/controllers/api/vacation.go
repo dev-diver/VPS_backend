@@ -303,10 +303,6 @@ func ApproveVacationPlanHandler(db *database.Database) fiber.Handler {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 		}
 
-		// 휴가 계획 상태 업데이트
-		plan.ApproveStage = uint(input.ApprovalStage)
-		plan.RejectState = false
-
 		//ApproverOrders 중에, ApproveStage보다 높은 order가 있는지 확인
 		var nextApproverOrder models.ApproverOrder
 		if err := db.DB.Where("vacation_plan_id = ? AND `order` = ?", plan.ID, input.ApprovalStage+1).First(&nextApproverOrder).Error; err != nil {
@@ -314,6 +310,10 @@ func ApproveVacationPlanHandler(db *database.Database) fiber.Handler {
 				plan.CompleteState = true
 			}
 		}
+
+		// 휴가 계획 상태 업데이트
+		plan.ApproveStage = uint(input.ApprovalStage)
+		plan.RejectState = false
 
 		if err := db.DB.Save(&plan).Error; err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "휴가 계획을 승인할 수 없습니다"})
@@ -327,6 +327,13 @@ func ApproveVacationPlanHandler(db *database.Database) fiber.Handler {
 					return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "휴가 상태를 업데이트할 수 없습니다"})
 				}
 			}
+		}
+
+		//approve_order의 descisionDate 업데이트
+		if err := db.DB.Model(&models.ApproverOrder{}).
+			Where("vacation_plan_id = ? AND `order` = ?", plan.ID, input.ApprovalStage).
+			Update("decision_date", time.Now()).Error; err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "승인 날짜를 업데이트할 수 없습니다"})
 		}
 
 		return c.JSON(plan)
@@ -385,6 +392,12 @@ func CancelApproveVacationPlanHandler(db *database.Database) fiber.Handler {
 			}
 		}
 
+		if err := db.DB.Model(&models.ApproverOrder{}).
+			Where("vacation_plan_id = ? AND `order` = ?", plan.ID, input.ApprovalStage).
+			Update("decision_date", nil).Error; err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "승인 날짜를 업데이트할 수 없습니다"})
+		}
+
 		return c.JSON(plan)
 	}
 }
@@ -424,6 +437,13 @@ func RejectVacationPlanHandler(db *database.Database) fiber.Handler {
 			}
 		}
 
+		//approve_order의 descisionDate 업데이트
+		if err := db.DB.Model(&models.ApproverOrder{}).
+			Where("vacation_plan_id = ? AND `order` = ?", plan.ID, input.ApprovalStage).
+			Update("decision_date", time.Now()).Error; err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "승인 날짜를 업데이트할 수 없습니다"})
+		}
+
 		return c.JSON(plan)
 	}
 }
@@ -460,6 +480,12 @@ func CancelRejectVacationPlanHandler(db *database.Database) fiber.Handler {
 			if err := db.DB.Save(&vacation).Error; err != nil {
 				return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "휴가 상태를 업데이트할 수 없습니다"})
 			}
+		}
+
+		if err := db.DB.Model(&models.ApproverOrder{}).
+			Where("vacation_plan_id = ? AND `order` = ?", plan.ID, input.ApprovalStage).
+			Update("decision_date", nil).Error; err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "승인 날짜를 업데이트할 수 없습니다"})
 		}
 
 		return c.JSON(plan)
