@@ -391,9 +391,15 @@ func CancelApproveVacationPlanHandler(db *database.Database) fiber.Handler {
 			return errors.New("승인 권한이 없습니다")
 		}
 
+		var nextApproverOrder models.ApproverOrder
+		if err := db.DB.Where("vacation_plan_id = ? AND `order` = ?", plan.ID, input.ApprovalStage+1).First(&nextApproverOrder).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				plan.CompleteState = false
+			}
+		}
+
 		// 휴가 계획 상태 업데이트
 		plan.ApproveStage = uint(input.ApprovalStage - 1)
-		plan.RejectState = false
 		if err := db.DB.Save(&plan).Error; err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "휴가 계획을 승인할 수 없습니다"})
 		}
