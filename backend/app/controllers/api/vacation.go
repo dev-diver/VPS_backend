@@ -464,8 +464,9 @@ func CancelRejectVacationPlanHandler(db *database.Database) fiber.Handler {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 		}
 
-		if err := ValdiateVacationPlanApproval(c, db, input, plan); err != nil {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+		//승인 단계 확인
+		if input.ApprovalStage != plan.ApproveStage {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "잘못된 승인단계입니다."})
 		}
 
 		// 휴가 계획 상태 업데이트
@@ -635,12 +636,29 @@ func DeleteVacationHandler(db *database.Database) fiber.Handler {
 func RejectVacationHandler(db *database.Database) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		//TODO:결재자만 reject 가능
-		vacationId := c.Params("vacationID")
-		var vacation models.ApplyVacation
-		if err := db.DB.First(&vacation, vacationId).Error; err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		vacationId, err := strconv.ParseUint(c.Params("vacationID"), 10, 64)
+		if err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid vacation ID"})
 		}
+
+		input, vacation, err := ValidateVacationRequest(c, db, vacationId)
+		if err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+		}
+
+		//승인 단계 확인
+		if vacation.RejectState {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "이미 거절된 휴가입니다"})
+		}
+
+		if vacation.ApproveStage != uint(input.ApprovalStage)-1 {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "잘못된 승인 단계입니다"})
+		}
+
+		//vacationPlan의 같은 승인자인지도 검사해야함
+
 		vacation.RejectState = true
+		vacation.ApproveStage = uint(input.ApprovalStage)
 		if err := db.DB.Save(&vacation).Error; err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 		}
@@ -653,12 +671,28 @@ func RejectVacationHandler(db *database.Database) fiber.Handler {
 func CancelRejectVacationHandler(db *database.Database) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		//TODO:결재자만 원복 가능
-		vacationId := c.Params("vacationID")
-		var vacation models.ApplyVacation
-		if err := db.DB.First(&vacation, vacationId).Error; err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		vacationId, err := strconv.ParseUint(c.Params("vacationID"), 10, 64)
+		if err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid vacation ID"})
 		}
+
+		input, vacation, err := ValidateVacationRequest(c, db, vacationId)
+		if err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+		}
+
+		if !vacation.RejectState {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "이미 거절된 휴가입니다"})
+		}
+
+		if vacation.ApproveStage != uint(input.ApprovalStage) {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "잘못된 승인 단계입니다"})
+		}
+
+		//vacationPlan의 같은 승인자인지도 검사해야함
+
 		vacation.RejectState = false
+		vacation.ApproveStage = uint(input.ApprovalStage) - 1
 		if err := db.DB.Save(&vacation).Error; err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 		}
@@ -753,11 +787,32 @@ func ValidateVacationPlanRequest(c *fiber.Ctx, db *database.Database, planID uin
 	return input, plan, nil
 }
 
+func ValidateVacationRequest(c *fiber.Ctx, db *database.Database, vacationID uint64) (dto.ApproveVacationPlanRequest, models.ApplyVacation, error) {
+
+	// 요청 바디 검증
+	input := dto.ApproveVacationPlanRequest{}
+	vacation := models.ApplyVacation{}
+	if err := c.BodyParser(&input); err != nil {
+		return input, vacation, err
+	}
+
+	// 요청 데이터 검증
+	validate := validator.New()
+	if err := validate.Struct(&input); err != nil {
+		return input, vacation, err
+	}
+
+	if err := db.First(&vacation, vacationID).Error; err != nil {
+		return input, vacation, err
+	}
+
+	return input, vacation, nil
+}
+
 func ValdiateVacationPlanApproval(c *fiber.Ctx, db *database.Database, input dto.ApproveVacationPlanRequest, plan models.VacationPlan) error {
 
 	// 승인 단계가 올바른지 검증
-	if !(input.ApprovalStage > plan.ApproveStage ||
-		(input.ApprovalStage == plan.ApproveStage && plan.RejectState)) {
+	if input.ApprovalStage-1 != plan.ApproveStage {
 		return errors.New("잘못된 승인 단계 순서입니다")
 	}
 
