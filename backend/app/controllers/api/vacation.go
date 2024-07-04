@@ -153,6 +153,14 @@ func GetVacationsByPeriodHandler(db *database.Database) fiber.Handler {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 		}
 
+		completedQ := c.Query("completed")
+		var completed bool
+		if completedQ == "true" {
+			completed = true
+		} else if completedQ == "false" {
+			completed = false
+		}
+
 		var startDate, endDate time.Time
 		if month != 0 {
 			startDate = time.Date(year, time.Month(month), 1, 0, 0, 0, 0, time.UTC)
@@ -166,16 +174,24 @@ func GetVacationsByPeriodHandler(db *database.Database) fiber.Handler {
 		query := db.DB.Preload("Member")
 
 		if companyID != 0 {
-			query = query.Joins("JOIN members ON members.id = apply_vacations.member_id").Where("members.company_id = ?", companyID)
+			query = query.Joins("JOIN members ON members.id = apply_vacations.member_id").
+				Joins("JOIN vacation_plans ON vacation_plans.id = apply_vacations.vacation_plan_id").
+				Where("members.company_id = ?", companyID)
 		} else if groupID != 0 {
 			query = query.Joins("JOIN group_members ON group_members.member_id = apply_vacations.member_id").
 				Joins("JOIN members ON members.id = group_members.member_id").
+				Joins("JOIN vacation_plans ON vacation_plans.id = apply_vacations.vacation_plan_id").
 				Where("group_members.group_id = ?", groupID)
 		} else if memberID != 0 {
-			query = query.Where("member_id = ?", memberID)
+			query = query.Joins("JOIN vacation_plans ON vacation_plans.id = apply_vacations.vacation_plan_id").
+				Where("member_id = ?", memberID)
 		}
 
-		query = query.Where("start_date <= ? AND end_date >= ?", endDate, startDate)
+		if completedQ != "" {
+			query = query.Where("vacation_plans.complete_state = ?", completed)
+		}
+
+		query = query.Where("apply_vacations.start_date <= ? AND apply_vacations.end_date >= ?", endDate, startDate)
 
 		if err := query.Find(&vacations).Error; err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
