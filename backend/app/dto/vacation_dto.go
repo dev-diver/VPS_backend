@@ -65,15 +65,16 @@ type ApplyVacationResponse struct {
 }
 
 type ApplyVacationCardResponse struct {
-	ID           uint      `json:"id"`
-	MemberID     uint      `json:"member_id"`
-	MemberName   string    `json:"member_name"`
-	StartDate    time.Time `json:"start_date"`
-	EndDate      time.Time `json:"end_date"`
-	HalfFirst    bool      `json:"half_first"`
-	HalfLast     bool      `json:"half_last"`
-	ApproveStage uint      `json:"approve_stage"`
-	RejectState  bool      `json:"reject_state"`
+	ID            uint      `json:"id"`
+	MemberID      uint      `json:"member_id"`
+	MemberName    string    `json:"member_name"`
+	StartDate     time.Time `json:"start_date"`
+	EndDate       time.Time `json:"end_date"`
+	HalfFirst     bool      `json:"half_first"`
+	HalfLast      bool      `json:"half_last"`
+	ApproveStage  uint      `json:"approve_stage"`
+	RejectState   bool      `json:"reject_state"`
+	CompleteState bool      `json:"complete_state"`
 }
 
 func MapApplyVacationToResponse(vacation models.ApplyVacation) ApplyVacationResponse {
@@ -87,17 +88,18 @@ func MapApplyVacationToResponse(vacation models.ApplyVacation) ApplyVacationResp
 	}
 }
 
-func MapApplyVacationToCardResponse(vacation models.ApplyVacation) ApplyVacationCardResponse {
+func MapApplyVacationToCardResponse(vacation models.ApplyVacation, completeState bool) ApplyVacationCardResponse {
 	return ApplyVacationCardResponse{
-		ID:           vacation.ID,
-		MemberID:     vacation.MemberID,
-		MemberName:   vacation.Member.Name,
-		StartDate:    vacation.StartDate,
-		EndDate:      vacation.EndDate,
-		HalfFirst:    vacation.HalfFirst,
-		HalfLast:     vacation.HalfLast,
-		ApproveStage: vacation.ApproveStage,
-		RejectState:  vacation.RejectState,
+		ID:            vacation.ID,
+		MemberID:      vacation.MemberID,
+		MemberName:    vacation.Member.Name,
+		StartDate:     vacation.StartDate,
+		EndDate:       vacation.EndDate,
+		HalfFirst:     vacation.HalfFirst,
+		HalfLast:      vacation.HalfLast,
+		ApproveStage:  vacation.ApproveStage,
+		RejectState:   vacation.RejectState,
+		CompleteState: completeState,
 	}
 }
 

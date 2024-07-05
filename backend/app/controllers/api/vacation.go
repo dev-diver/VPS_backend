@@ -171,7 +171,7 @@ func GetVacationsByPeriodHandler(db *database.Database) fiber.Handler {
 		}
 
 		var vacations []models.ApplyVacation
-		query := db.DB.Preload("Member")
+		query := db.DB.Preload("Member").Preload("VacationPlan")
 
 		if companyID != 0 {
 			query = query.Joins("JOIN members ON members.id = apply_vacations.member_id").
@@ -199,7 +199,7 @@ func GetVacationsByPeriodHandler(db *database.Database) fiber.Handler {
 
 		vacationsResponse := make([]dto.ApplyVacationCardResponse, 0)
 		for _, vacation := range vacations {
-			vacationsResponse = append(vacationsResponse, dto.MapApplyVacationToCardResponse(vacation))
+			vacationsResponse = append(vacationsResponse, dto.MapApplyVacationToCardResponse(vacation, vacation.VacationPlan.CompleteState))
 		}
 		return c.JSON(vacationsResponse)
 	}
