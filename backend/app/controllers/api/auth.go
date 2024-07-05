@@ -28,7 +28,6 @@ func MakeAdminHandler(db *database.Database) fiber.Handler {
 		}
 
 		companyID := company.ID
-
 		Password := "1234"
 
 		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(Password), bcrypt.DefaultCost)
