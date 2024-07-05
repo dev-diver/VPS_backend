@@ -46,10 +46,12 @@ func GetCorrectMember(loginRequest dto.LoginRequest, c *fiber.Ctx, db *database.
 }
 
 func CheckToken(c *fiber.Ctx) (*dto.LoginResponse, error) {
+
 	tokenString := c.Cookies("authToken_info")
 	token, err := jwt.ParseWithClaims(tokenString, &utils.Claims{}, func(token *jwt.Token) (interface{}, error) {
 		return utils.GetJWTSecretKey(), nil
 	})
+
 	if err != nil {
 		return nil, errors.New("invalid token")
 	}
