@@ -18,7 +18,7 @@ func InitDB() (*Database, error) {
 
 	err := godotenv.Load("./database/.env")
 	if err != nil {
-		log.Fatalf("Error loading .env file")
+		log.Fatalf("Error loading .env file: %v", err)
 	}
 
 	dbUser := os.Getenv("DATABASE_USER")
