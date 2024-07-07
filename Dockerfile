@@ -28,7 +28,7 @@ FROM ubuntu
 COPY --from=builder /app/backend/server /app/backend/server
 
 
-WORKDIR /app
+WORKDIR /app/backend
 
 # 포트 설정
 EXPOSE 3000
