@@ -28,10 +28,10 @@ FROM ubuntu
 COPY --from=builder /app/backend/server /app/backend/server
 
 
-WORKDIR /app/backend
+WORKDIR /app
 
 # 포트 설정
 EXPOSE 3000
 
 # 애플리케이션 실행
-CMD ["./server"]
+CMD ["/app/backend/server"]
