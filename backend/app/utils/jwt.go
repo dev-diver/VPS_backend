@@ -34,7 +34,7 @@ func SetJWTSecretKey() error {
 
 	err := godotenv.Load("./config/.env")
 	if err != nil {
-		log.Fatalf("Error loading .env file")
+		log.Fatalf("Error loading ./config/:.env file: %v", err)
 	}
 
 	secret := os.Getenv("JWT_SECRET")
