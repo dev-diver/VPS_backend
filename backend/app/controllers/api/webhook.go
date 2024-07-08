@@ -51,7 +51,7 @@ func WebhookHandler() fiber.Handler {
 
 func clientRestart(imageName string) error {
 
-	client_container_name := "vacation_promotion_server"
+	client_container_name := "vacation_promotion_client"
 
 	//client stop
 	if err := dockerRequest("POST", fmt.Sprintf("/containers/%s/stop", client_container_name), nil); err != nil {
