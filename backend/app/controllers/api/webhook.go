@@ -114,7 +114,9 @@ func imagePull(imageName string) error {
 func dockerRequest(method, command string, jsonData []byte) error {
 	client := &http.Client{}
 	hostIP := os.Getenv("HOST_IP") // 환경 변수에서 호스트 IP 주소 가져오기
+
 	url := "http://" + hostIP + ":2375" + command
+	fmt.Printf("request to %s", url)
 
 	var req *http.Request
 	var err error
