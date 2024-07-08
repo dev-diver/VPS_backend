@@ -10,9 +10,7 @@ RUN apt-get update && apt-get install -y \
   chmod a+r /etc/apt/keyrings/docker.asc && \
   echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null && \
   apt-get update && \
-  apt-get install -y docker-ce docker-ce-cli && \
-  curl -L "https://github.com/docker/compose/releases/download/v2.12.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose && \
-  chmod +x /usr/local/bin/docker-compose && \
+  apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin && \
   rm -rf /var/lib/apt/lists/*
 
 RUN groupadd -f docker && usermod -aG docker root
@@ -33,7 +31,7 @@ FROM ubuntu
 # 빌드 단계에서 빌드된 애플리케이션 복사
 COPY --from=builder /app/backend/ /app/backend/
 COPY --from=builder /usr/bin/docker /usr/bin/docker
-COPY --from=builder /usr/local/bin/docker-compose /usr/local/bin/docker-compose
+COPY --from=builder /usr/libexec/docker/cli-plugins/docker-compose /usr/libexec/docker/cli-plugins/docker-compose
 
 WORKDIR /app/backend
 
