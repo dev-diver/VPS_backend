@@ -311,7 +311,7 @@ type TagResponse struct {
 }
 
 func getLatestDockerDigest(repo, image string) (string, error) {
-	url := fmt.Sprintf("https://registry.hub.docker.com/v2/repositories/%s/%s/manifests/latest", repo, image)
+	url := fmt.Sprintf("https://registry.hub.docker.com/v2/%s/%s/manifests/latest", repo, image)
 
 	// Create a custom HTTP client to skip TLS verification
 	client := &http.Client{
