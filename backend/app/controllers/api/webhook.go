@@ -3,7 +3,6 @@ package api
 import (
 	"bytes"
 	"crypto/tls"
-	"encoding/json"
 	"fmt"
 	"io"
 	"log"
@@ -312,7 +311,7 @@ type TagResponse struct {
 }
 
 func getLatestDockerDigest(repo, image string) (string, error) {
-	url := fmt.Sprintf("https://hub.docker.com/v2/repositories/%s/%s/tags/latest", repo, image)
+	url := fmt.Sprintf("https://registry.hub.docker.com/v2/repositories/%s/%s/manifests/latest", repo, image)
 
 	// Create a custom HTTP client to skip TLS verification
 	client := &http.Client{
@@ -322,21 +321,24 @@ func getLatestDockerDigest(repo, image string) (string, error) {
 	}
 
 	// Make the request using the custom client
-	resp, err := client.Get(url)
+	req, err := http.NewRequest("HEAD", url, nil)
+	if err != nil {
+		return "", err
+	}
+	req.Header.Set("Accept", "application/vnd.docker.distribution.manifest.v2+json")
+
+	resp, err := client.Do(req)
 	if err != nil {
 		return "", err
 	}
 	defer resp.Body.Close()
 
-	var tagResponse TagResponse
-	if err := json.NewDecoder(resp.Body).Decode(&tagResponse); err != nil {
-		return "", err
+	digest := resp.Header.Get("Docker-Content-Digest")
+	if digest == "" {
+		return "", fmt.Errorf("no Docker-Content-Digest header found")
 	}
 
-	if len(tagResponse.Results) > 0 {
-		return tagResponse.Results[0].Digest, nil
-	}
-	return "", fmt.Errorf("no digests found")
+	return digest, nil
 }
 
 func getCurrentImageDigest(containerName string) (string, error) {
@@ -345,6 +347,9 @@ func getCurrentImageDigest(containerName string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	digest := strings.Split(string(output), "@")[1]
-	return strings.TrimSpace(digest), nil
+	parts := strings.Split(string(output), "@")
+	if len(parts) != 2 {
+		return "", fmt.Errorf("unexpected output: %s", output)
+	}
+	return strings.TrimSpace(parts[1]), nil
 }
