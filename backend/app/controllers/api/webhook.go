@@ -3,6 +3,7 @@ package api
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -141,5 +142,12 @@ func dockerRequest(method, command string, jsonData []byte) error {
 		return fmt.Errorf("HTTP request failed: %v", err)
 	}
 	defer resp.Body.Close()
+
+	if resp.StatusCode >= 400 {
+		body, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("Docker API error: %s", body)
+	}
+
+	log.Printf("Request to %s completed with status %d", url, resp.StatusCode)
 	return nil
 }
