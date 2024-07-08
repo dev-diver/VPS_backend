@@ -30,7 +30,6 @@ FROM ubuntu
 
 # 빌드 단계에서 빌드된 애플리케이션 복사
 COPY --from=builder /app/backend/ /app/backend/
-COPY --from=builder /usr/local/bin/docker-compose /usr/local/bin/docker-compose
 COPY --from=builder /usr/bin/docker /usr/bin/docker
 
 WORKDIR /app/backend
