@@ -2,4 +2,3 @@
 dist/*/**
 *.cnf
 server
-docker-compose.yml
