@@ -116,7 +116,7 @@ func serverRestart(imageName string) error {
 			}
 		}
 	}`)
-	if err := dockerRequest("POST", "/containers/create", runContainerData); err != nil {
+	if err := dockerRequest("POST", fmt.Sprintf("/containers/create?name=%s", server_container_name), runContainerData); err != nil {
 		log.Printf("Failed to create server container: %v", err)
 		return err
 	}
@@ -132,11 +132,12 @@ func serverRestart(imageName string) error {
 		log.Printf("Failed to restart container: %v", err)
 		return fiber.NewError(fiber.StatusInternalServerError, "Internal server error")
 	}
+	log.Println("Server container restarted successfully.")
 	return nil
 }
 
 func imagePull(imageName string) error {
-	pullImageUrl := fmt.Sprintf("/images/create?fromImage=%s", url.QueryEscape(imageName))
+	pullImageUrl := fmt.Sprintf("/images/create?fromImage=%s:latest", url.QueryEscape(imageName))
 	if err := dockerRequest("POST", pullImageUrl, nil); err != nil {
 		log.Printf("Failed to pull images: %v", err)
 		return fiber.NewError(fiber.StatusInternalServerError, "Internal server error")
