@@ -2,6 +2,7 @@ package api
 
 import (
 	"bytes"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -311,7 +312,16 @@ type TagResponse struct {
 
 func getLatestDockerTag(repo, image string) (string, error) {
 	url := fmt.Sprintf("https://hub.docker.com/v2/repositories/%s/%s/tags", repo, image)
-	resp, err := http.Get(url)
+
+	// Create a custom HTTP client to skip TLS verification
+	client := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		},
+	}
+
+	// Make the request using the custom client
+	resp, err := client.Get(url)
 	if err != nil {
 		return "", err
 	}
