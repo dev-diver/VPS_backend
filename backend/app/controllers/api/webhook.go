@@ -72,6 +72,7 @@ func clientRestart(imageName string) error {
 	//compose run -d client
 	runContainerData := []byte(`{
 		"Image": "devdiver/vacation_promotion_client:latest",
+		"Name": "vacation_promotion_client",
 		"HostConfig": {
 			"Binds": ["/front_app:/dist"],
 			"Command": ["sh", "-c", "rm -rf /dist/* && mv /app/front_web/dist/* /dist && bin/true"]
@@ -103,6 +104,7 @@ func serverRestart(imageName string) error {
 	log.Println("Creating and starting server container...")
 	runContainerData := []byte(`{
 		"Image": "devdiver/vacation_promotion_server:latest",
+		"Name": "vacation_promotion_server",
 		"Env": ["HOST_IP=${HOST_IP}"],
 		"HostConfig": {
 			"Binds": [
