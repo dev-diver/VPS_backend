@@ -100,32 +100,31 @@ func serverRestart(imageName string) error {
 
 	server_container_name := "vacation_promotion_server"
 
-	log.Println("Creating and starting server container...")
-	runContainerData := []byte(`{
-		"Image": "devdiver/vacation_promotion_server:latest",
-		"Name": "vacation_promotion_server",
-		"Env": ["HOST_IP=${HOST_IP}"],
-		"HostConfig": {
-			"Binds": [
-				"config:/app/backend/config",
-				"database:/app/backend/database",
-				"front_app:/app/dist"
-			],
-			"PortBindings": {
-				"3000/tcp": [{"HostPort": "3000"}]
-			}
-		}
-	}`)
-	if err := dockerRequest("POST", fmt.Sprintf("/containers/create?name=%s", server_container_name), runContainerData); err != nil {
-		log.Printf("Failed to create server container: %v", err)
-		return err
-	}
+	// log.Println("Creating and starting server container...")
+	// runContainerData := []byte(`{
+	// 	"Image": "devdiver/vacation_promotion_server:latest",
+	// 	"Env": ["HOST_IP=${HOST_IP}"],
+	// 	"HostConfig": {
+	// 		"Binds": [
+	// 			"config:/app/backend/config",
+	// 			"database:/app/backend/database",
+	// 			"front_app:/app/dist"
+	// 		],
+	// 		"PortBindings": {
+	// 			"3000/tcp": [{"HostPort": "3000"}]
+	// 		}
+	// 	}
+	// }`)
+	// if err := dockerRequest("POST", fmt.Sprintf("/containers/create?name=%s", server_container_name), runContainerData); err != nil {
+	// 	log.Printf("Failed to create server container: %v", err)
+	// 	return err
+	// }
 
-	if err := dockerRequest("POST", fmt.Sprintf("/containers/%s/start", server_container_name), nil); err != nil {
-		log.Printf("Failed to start server container: %v", err)
-		return err
-	}
-	log.Println("Server container created and started successfully.")
+	// if err := dockerRequest("POST", fmt.Sprintf("/containers/%s/start", server_container_name), nil); err != nil {
+	// 	log.Printf("Failed to start server container: %v", err)
+	// 	return err
+	// }
+	// log.Println("Server container created and started successfully.")
 
 	//docker restart server
 	if err := dockerRequest("POST", fmt.Sprintf("/containers/%s/restart", server_container_name), nil); err != nil {
