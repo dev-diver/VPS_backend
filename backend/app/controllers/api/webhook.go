@@ -77,25 +77,25 @@ func execCommand(command string, arg ...string) error {
 func clientRestartWithSocket() error {
 
 	log.Printf("docker compose stop client ")
-	if err := exec.Command("docker", "compose", "stop", "client").Run(); err != nil {
+	if err := exec.Command("docker-compose", "stop", "client").Run(); err != nil {
 		log.Printf("Failed to stop client container: %v", err)
 		return fiber.NewError(fiber.StatusInternalServerError, "Internal server error")
 	}
 
 	log.Printf("docker compose rm -f client ")
-	if err := execCommand("docker", "compose", "rm", "-f", "client"); err != nil {
+	if err := execCommand("docker-compose", "rm", "-f", "client"); err != nil {
 		log.Printf("Failed to remove client container: %v", err)
 		return fiber.NewError(fiber.StatusInternalServerError, "Internal server error")
 	}
 
 	log.Printf("docker compose pull client ")
-	if err := execCommand("docker", "compose", "pull", "client"); err != nil {
+	if err := execCommand("docker-compose", "pull", "client"); err != nil {
 		log.Printf("Failed to pull client: %v", err)
 		return fiber.NewError(fiber.StatusInternalServerError, "Internal server error")
 	}
 
 	log.Printf("docker compose up -d client ")
-	if err := execCommand("docker", "compose", "up", "-d", "client"); err != nil {
+	if err := execCommand("docker-compose", "up", "-d", "client"); err != nil {
 		log.Printf("Failed to start client container: %v", err)
 		return fiber.NewError(fiber.StatusInternalServerError, "Internal server error")
 	}
@@ -106,14 +106,14 @@ func clientRestartWithSocket() error {
 func serverRestartWithSocket() error {
 
 	log.Printf("docker compose pull server ")
-	cmd := exec.Command("/bin/bash", "-c", "docker compose pull server")
+	cmd := exec.Command("/bin/bash", "-c", "docker-compose pull server")
 	if err := cmd.Run(); err != nil {
 		log.Printf("Failed to pull server: %v", err)
 		return fiber.NewError(fiber.StatusInternalServerError, "Internal server error")
 	}
 
 	log.Printf("docker compose up -d server ")
-	cmd = exec.Command("/bin/bash", "-c", "docker compose up -d server")
+	cmd = exec.Command("/bin/bash", "-c", "docker-compose up -d server")
 	if err := cmd.Run(); err != nil {
 		log.Printf("Failed to start server container: %v", err)
 		return fiber.NewError(fiber.StatusInternalServerError, "Internal server error")
