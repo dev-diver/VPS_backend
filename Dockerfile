@@ -1,5 +1,5 @@
 # 단계 1: 빌드 단계
-FROM golang:1.22.3 AS builder
+FROM golang:1.22.5-bookworm AS builder
 
 RUN apt-get update && apt-get install -y \
   ca-certificates \
