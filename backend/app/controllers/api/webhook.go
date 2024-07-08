@@ -27,7 +27,7 @@ func getContainerID(containerName string) (string, error) {
 	client := &http.Client{}
 	hostIP := os.Getenv("HOST_IP") // 환경 변수에서 호스트 IP 주소 가져오기
 
-	url := "http://" + hostIP + ":2375" + "/containers/" + containerName + "/json"
+	url := "http://" + hostIP + ":2375" + "/containers/" + containerName + "/json?all=true"
 	log.Printf("request to %s", url)
 
 	req, err := http.NewRequest("GET", url, nil)
