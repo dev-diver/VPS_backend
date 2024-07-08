@@ -153,10 +153,10 @@ func dockerRequest(method, command string, jsonData []byte) error {
 	var req *http.Request
 	var err error
 	if jsonData != nil {
-		req, err = http.NewRequest(method, url+command, bytes.NewBuffer(jsonData))
+		req, err = http.NewRequest(method, url, bytes.NewBuffer(jsonData))
 		req.Header.Set("Content-Type", "application/json")
 	} else {
-		req, err = http.NewRequest(method, url+command, nil)
+		req, err = http.NewRequest(method, url, nil)
 	}
 
 	if err != nil {
@@ -172,7 +172,7 @@ func dockerRequest(method, command string, jsonData []byte) error {
 
 	if resp.StatusCode >= 400 {
 		body, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("Docker API error: %s", body)
+		return fmt.Errorf("docker API error: %s", body)
 	}
 
 	log.Printf("Request to %s completed with status %d", url, resp.StatusCode)
