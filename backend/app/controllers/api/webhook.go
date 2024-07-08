@@ -63,6 +63,7 @@ func clientRestart(imageName string) error {
 
 	//compose pull client
 	if err := imagePull(imageName); err != nil {
+		log.Printf("Failed to pull client %v", err)
 		return err
 	}
 
@@ -91,6 +92,7 @@ func serverRestart(imageName string) error {
 
 	//image pull server
 	if err := imagePull(imageName); err != nil {
+		log.Printf("Failed to pull server %v", err)
 		return err
 	}
 
@@ -107,7 +109,7 @@ func serverRestart(imageName string) error {
 func imagePull(imageName string) error {
 	pullImageUrl := fmt.Sprintf("/images/create?fromImage=%s:latest", imageName)
 	if err := dockerRequest("POST", pullImageUrl, nil); err != nil {
-		log.Printf("Failed to pull images: %v", nil)
+		log.Printf("Failed to pull images: %v", err)
 		return fiber.NewError(fiber.StatusInternalServerError, "Internal server error")
 	}
 	return nil
@@ -118,7 +120,7 @@ func dockerRequest(method, command string, jsonData []byte) error {
 	hostIP := os.Getenv("HOST_IP") // 환경 변수에서 호스트 IP 주소 가져오기
 
 	url := "http://" + hostIP + ":2375" + command
-	log.Printf("request to %s", url)
+	log.Printf("%s request to %s", method, url)
 
 	var req *http.Request
 	var err error
