@@ -2,6 +2,7 @@ package api
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
@@ -248,4 +249,74 @@ func dockerRequest(method, command string, jsonData []byte) error {
 
 	log.Printf("Request to %s completed with status %d", url, resp.StatusCode)
 	return nil
+}
+
+func HaveUpdateHandler() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		serviceName := c.Query("service")
+		if serviceName == "" {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request"})
+		}
+
+		var imageName string
+		if serviceName == "server" {
+			imageName = "vacation_promotion_server"
+		} else if serviceName == "client" {
+			imageName = "vacation_promotion_client"
+		} else {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid service"})
+		}
+
+		latestTag, err := getLatestDockerTag("devdiver", imageName)
+		if err != nil {
+			return err
+		}
+		log.Printf("Latest tag for %s: %s", imageName, latestTag)
+
+		currentTag, err := getCurrentImageTag(imageName)
+		if err != nil {
+			return err
+		}
+		log.Printf("Current tag for %s: %s", imageName, currentTag)
+
+		if currentTag != latestTag {
+			return c.JSON(fiber.Map{"update": true})
+		} else {
+			return c.JSON(fiber.Map{"update": false})
+		}
+	}
+}
+
+type TagResponse struct {
+	Results []struct {
+		Name string `json:"name"`
+	} `json:"results"`
+}
+
+func getLatestDockerTag(repo, image string) (string, error) {
+	url := fmt.Sprintf("https://hub.docker.com/v2/repositories/%s/%s/tags", repo, image)
+	resp, err := http.Get(url)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	var tags TagResponse
+	if err := json.NewDecoder(resp.Body).Decode(&tags); err != nil {
+		return "", err
+	}
+
+	if len(tags.Results) > 0 {
+		return tags.Results[0].Name, nil
+	}
+	return "", fmt.Errorf("no tags found")
+}
+
+func getCurrentImageTag(containerName string) (string, error) {
+	cmd := exec.Command("docker", "inspect", "--format='{{.Config.Image}}'", containerName)
+	output, err := cmd.Output()
+	if err != nil {
+		return "", err
+	}
+	return string(output), nil
 }
