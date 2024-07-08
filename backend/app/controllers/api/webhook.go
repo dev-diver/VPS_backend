@@ -86,13 +86,13 @@ func clientRestartWithSocket() error {
 	}
 
 	log.Printf("docker compose pull client")
-	if err := execCommand("docker-compose", "pull", "client"); err != nil {
+	if err := execCommand("docker", "compose", "pull", "client"); err != nil {
 		log.Printf("Failed to pull client: %v", err)
 		return fiber.NewError(fiber.StatusInternalServerError, "Internal server error")
 	}
 
 	log.Printf("docker compose up -d client ")
-	if err := execCommand("docker-compose", "up", "client", "-d"); err != nil {
+	if err := execCommand("docker", "compose", "up", "client", "-d"); err != nil {
 		log.Printf("Failed to start client container: %v", err)
 		return fiber.NewError(fiber.StatusInternalServerError, "Internal server error")
 	}
@@ -117,13 +117,13 @@ func serverRestartWithSocket() error {
 	}
 
 	log.Printf("docker compose pull server")
-	if err := execCommand("docker-compose", "pull", "server"); err != nil {
+	if err := execCommand("docker", "compose", "pull", "server"); err != nil {
 		log.Printf("Failed to pull server: %v", err)
 		return fiber.NewError(fiber.StatusInternalServerError, "Internal server error")
 	}
 
 	log.Printf("docker compose up -d server")
-	if err := execCommand("docker-compose", "up", "server", "-d"); err != nil {
+	if err := execCommand("docker", "compose", "up", "server", "-d"); err != nil {
 		log.Printf("Failed to start server container: %v", err)
 		return fiber.NewError(fiber.StatusInternalServerError, "Internal server error")
 	}

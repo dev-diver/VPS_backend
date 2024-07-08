@@ -28,14 +28,14 @@ RUN go mod tidy
 # 애플리케이션 빌드
 RUN go build -o server
 
-# 단계 2: 실행 단계
-FROM ubuntu
+# # 단계 2: 실행 단계
+# FROM ubuntu
 
-# 빌드 단계에서 빌드된 애플리케이션 복사
-COPY --from=builder /app/backend/ /app/backend/
-COPY --from=builder /usr/bin/docker /usr/bin/docker
-COPY --from=builder /usr/local/bin/docker-compose /usr/local/bin/docker-compose
-COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+# # 빌드 단계에서 빌드된 애플리케이션 복사
+# COPY --from=builder /app/backend/ /app/backend/
+# COPY --from=builder /usr/bin/docker /usr/bin/docker
+# COPY --from=builder /usr/local/bin/docker-compose /usr/local/bin/docker-compose
+# COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 
 WORKDIR /app/backend
 
