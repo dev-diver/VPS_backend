@@ -72,13 +72,12 @@ func clientRestart(imageName string) error {
 	//compose run -d client
 	runContainerData := []byte(`{
 		"Image": "devdiver/vacation_promotion_client:latest",
-		"Name": "vacation_promotion_client",
 		"HostConfig": {
 			"Binds": ["/front_app:/dist"],
 			"Command": ["sh", "-c", "rm -rf /dist/* && mv /app/front_web/dist/* /dist && bin/true"]
 		}
 	}`)
-	if err := dockerRequest("POST", "/containers/create", runContainerData); err != nil {
+	if err := dockerRequest("POST", fmt.Sprintf("/containers/create?name=%s", client_container_name), runContainerData); err != nil {
 		log.Printf("Failed to create container: %v", err)
 		return fiber.NewError(fiber.StatusInternalServerError, "Internal server error")
 	}
