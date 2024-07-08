@@ -105,7 +105,7 @@ func clientRestartWithSocket() error {
 func serverRestartWithSocket() error {
 
 	log.Printf("docker compose pull server ")
-	if err := execCommand("docker", "compose", "pull", "server"); err != nil {
+	if err := execCommand("docker-compose", "pull", "server"); err != nil {
 		log.Printf("Failed to pull server: %v", err)
 		return fiber.NewError(fiber.StatusInternalServerError, "Internal server error")
 	}
