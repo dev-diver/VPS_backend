@@ -26,7 +26,10 @@ func main() {
 
 	app.Use(cors.New(cors.Config{
 		AllowOriginsFunc: func(origin string) bool {
-			return strings.HasPrefix(origin, "http://localhost") || strings.HasPrefix(origin, "http://"+hostIP)
+			return strings.HasPrefix(origin, "http://localhost:3000") ||
+				strings.HasPrefix(origin, "http://localhost:5000") ||
+				strings.HasPrefix(origin, "http://"+hostIP+":3000") ||
+				strings.HasPrefix(origin, "http://"+hostIP+":5000")
 		},
 		AllowCredentials: true,
 	}))
