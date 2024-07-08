@@ -5,11 +5,11 @@ services:
     image: mariadb:10.2
     container_name: mariadb
     env_file:
-      - ./database/.env
+      - /app/backend/database/.env
     volumes:
       - mariadb_data:/var/lib/mysql
-      - ./database/conf.d:/etc/mysql/conf.d
-      - ./database/initd.d:/docker-entrypoint-initdb.d
+      - /app/backend/database/conf.d:/etc/mysql/conf.d
+      - /app/backend/database/initd.d:/docker-entrypoint-initdb.d
     ports:
       - "3306:3306"
     entrypoint: ["sh", "-c", "chown -R mysql:mysql /var/lib/mysql && chmod 644 /etc/mysql/conf.d/*.cnf && docker-entrypoint.sh mysqld"]
@@ -22,10 +22,9 @@ services:
     #   - HOST_IP=${HOST_IP}
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - config:/app/backend/config
-      - database:/app/backend/database
+      - /app/backend/config:/app/backend/config
+      - /app/backend/config:/app/backend/database
       - front_app:/app/dist
-      - /docker-compose.yml:/app/backend/docker-compose.yml
     ports:
       - "3000:3000"
     restart: always
@@ -53,15 +52,15 @@ services:
 volumes:
   mariadb_data:
   front_app:
-  database:
-    driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: ./database
-  config:
-    driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: ./config
+  # database:
+  #   driver: local
+  #   driver_opts:
+  #     type: none
+  #     o: bind
+  #     device: ./database
+  # config:
+  #   driver: local
+  #   driver_opts:
+  #     type: none
+  #     o: bind
+  #     device: ./config
