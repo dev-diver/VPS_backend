@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"os/exec"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -38,11 +39,17 @@ func WebhookHandler() fiber.Handler {
 		}
 
 		if imageName := webhookData.Repository.RepoName; imageName == "devdiver/vacation_promotion_client" {
-			if err := clientRestart(imageName); err != nil {
+			// if err := clientRestart(imageName); err != nil {
+			// 	return err
+			// }
+			if err := clientRestartWithSocket(); err != nil {
 				return err
 			}
 		} else if imageName == "devdiver/vacation_promotion_server" {
-			if err := serverRestart(imageName); err != nil {
+			// if err := serverRestart(imageName); err != nil {
+			// 	return err
+			// }
+			if err := serverRestartWithSocket(); err != nil {
 				return err
 			}
 		} else {
@@ -52,6 +59,57 @@ func WebhookHandler() fiber.Handler {
 
 		return c.JSON(fiber.Map{"status": "Success"})
 	}
+}
+
+func execCommand(command string) error {
+	cmd := exec.Command(command)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	if err := cmd.Run(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func clientRestartWithSocket() error {
+	if err := execCommand("docker compose stop client"); err != nil {
+		log.Printf("Failed to stop client container: %v", err)
+		return fiber.NewError(fiber.StatusInternalServerError, "Internal server error")
+	}
+
+	if err := execCommand("docker compose rm -f client"); err != nil {
+		log.Printf("Failed to remove client container: %v", err)
+		return fiber.NewError(fiber.StatusInternalServerError, "Internal server error")
+	}
+
+	if err := execCommand("docker compose pull client"); err != nil {
+		log.Printf("Failed to pull client: %v", err)
+		return fiber.NewError(fiber.StatusInternalServerError, "Internal server error")
+	}
+
+	if err := execCommand("docker compose up -d client"); err != nil {
+		log.Printf("Failed to start client container: %v", err)
+		return fiber.NewError(fiber.StatusInternalServerError, "Internal server error")
+	}
+
+	return nil
+}
+
+func serverRestartWithSocket() error {
+
+	if err := execCommand("docker compose pull server"); err != nil {
+		log.Printf("Failed to pull server: %v", err)
+		return fiber.NewError(fiber.StatusInternalServerError, "Internal server error")
+	}
+
+	if err := execCommand("docker compose up -d server"); err != nil {
+		log.Printf("Failed to start server container: %v", err)
+		return fiber.NewError(fiber.StatusInternalServerError, "Internal server error")
+	}
+
+	return nil
 }
 
 func clientRestart(imageName string) error {
