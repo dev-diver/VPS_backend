@@ -6,7 +6,6 @@ import (
 	"cywell.com/vacation-promotion/app/auth"
 	"cywell.com/vacation-promotion/app/dto"
 	"cywell.com/vacation-promotion/app/models"
-	"cywell.com/vacation-promotion/app/utils"
 	"cywell.com/vacation-promotion/database"
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
@@ -78,16 +77,6 @@ func LoginHandler(db *database.Database) fiber.Handler {
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": err.Error()})
 		}
 
-		sessionStore, err := auth.SessionStore.Get(c)
-		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "could not get session"})
-		}
-		defer sessionStore.Save()
-		err = sessionStore.Regenerate()
-		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "could not regenerate session"})
-		}
-
 		groupIDs := make([]uint, len(member.Groups))
 		for i, group := range member.Groups {
 			groupIDs[i] = group.ID
@@ -98,35 +87,14 @@ func LoginHandler(db *database.Database) fiber.Handler {
 		loginResponse.CompanyID = member.CompanyID
 		loginResponse.GroupIDs = groupIDs
 
-		token, err := utils.GenerateJWT(&loginResponse)
-		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "could not generate token"})
-		}
-
-		c.Cookie(&fiber.Cookie{
-			Name:     "authToken_info",
-			Value:    token,
-			HTTPOnly: false,
-			SameSite: "Lax",
-		})
-
+		auth.SetSessionAndToken(c, &loginResponse)
 		return c.SendStatus(fiber.StatusNoContent)
 	}
 }
 
-func LogoutHandler(db *database.Database) fiber.Handler {
+func LogoutHandler() fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		sessionStore, err := auth.SessionStore.Get(c)
-		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "could not get session"})
-		}
-
-		err = sessionStore.Destroy()
-		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "could not destroy session"})
-		}
-
-		c.ClearCookie("authToken_info")
+		auth.DestorySessionAndToken(c)
 		return c.SendStatus(fiber.StatusNoContent)
 	}
 }

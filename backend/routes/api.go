@@ -20,7 +20,7 @@ func registerAuth(apiRouter fiber.Router, db *database.Database) {
 	auth := apiRouter.Group("/auth")
 	auth.Post("/register", api.MakeAdminHandler(db))
 	auth.Post("/login", api.LoginHandler(db))
-	auth.Post("/logout", api.LogoutHandler(db))
+	auth.Post("/logout", api.LogoutHandler())
 }
 
 func registerCompanies(apiRouter fiber.Router, db *database.Database) {

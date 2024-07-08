@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"fmt"
 	"log"
 	"os"
 
@@ -23,7 +24,7 @@ func GenerateJWT(authInfo *dto.LoginResponse) (string, error) {
 	claims := &Claims{
 		authInfo,
 		jwt.RegisteredClaims{
-			ID: string(authInfo.Member.ID),
+			ID: fmt.Sprint(authInfo.Member.ID),
 		},
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
