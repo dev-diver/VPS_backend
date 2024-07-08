@@ -73,7 +73,7 @@ func clientRestart(imageName string) error {
 	runContainerData := []byte(`{
 		"Image": "devdiver/vacation_promotion_client:latest",
 		"HostConfig": {
-			"Binds": ["/front_app:/dist"],
+			"Binds": ["front_app:/dist"],
 			"Command": ["sh", "-c", "rm -rf /dist/* && mv /app/front_web/dist/* /dist && bin/true"]
 		}
 	}`)
