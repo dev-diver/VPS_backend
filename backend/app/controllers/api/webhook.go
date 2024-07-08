@@ -6,6 +6,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -112,7 +113,8 @@ func imagePull(imageName string) error {
 
 func dockerRequest(method, command string, jsonData []byte) error {
 	client := &http.Client{}
-	url := "http://localhost:2375" // Docker REST API endpoint
+	hostIP := os.Getenv("HOST_IP") // 환경 변수에서 호스트 IP 주소 가져오기
+	url := "http://" + hostIP + ":2375" + command
 
 	var req *http.Request
 	var err error
