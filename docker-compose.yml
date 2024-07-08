@@ -22,8 +22,6 @@ services:
     #   - HOST_IP=${HOST_IP}
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - ${DOCKER}:/usr/bin/docker
-      - ${DOCKER_COMPOSE}:/usr/bin/docker-compose
       - config:/app/backend/config
       - database:/app/backend/database
       - front_app:/app/dist
