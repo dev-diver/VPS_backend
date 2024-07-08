@@ -32,6 +32,11 @@ func WebhookHandler() fiber.Handler {
 
 		log.Printf("Webhook received: %+v", webhookData)
 
+		if webhookData.PushData.Tag != "latest" {
+			log.Printf("Tag is not latest: %s", webhookData.PushData.Tag)
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid tag"})
+		}
+
 		if imageName := webhookData.Repository.RepoName; imageName == "devdiver/vacation_promotion_client" {
 			if err := clientRestart(imageName); err != nil {
 				return err
@@ -127,7 +132,7 @@ func serverRestart(imageName string) error {
 	// log.Println("Server container created and started successfully.")
 
 	//docker restart server
-	if err := dockerRequest("POST", fmt.Sprintf("/containers/%s/restart", server_container_name), nil); err != nil {
+	if err := dockerRequest("POST", fmt.Sprintf("/containers/%s/restart?t=5", server_container_name), nil); err != nil {
 		log.Printf("Failed to restart container: %v", err)
 		return fiber.NewError(fiber.StatusInternalServerError, "Internal server error")
 	}
