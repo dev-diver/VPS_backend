@@ -2,9 +2,7 @@ package api
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
-	"io"
 	"log"
 	"net/http"
 	"os"
@@ -20,39 +18,6 @@ type WebhookData struct {
 	Repository struct {
 		RepoName string `json:"repo_name"`
 	} `json:"repository"`
-}
-
-func getContainerID(containerName string) (string, error) {
-
-	client := &http.Client{}
-	hostIP := os.Getenv("HOST_IP") // 환경 변수에서 호스트 IP 주소 가져오기
-
-	url := "http://" + hostIP + ":2375" + "/containers/" + containerName + "/json?all=true"
-	log.Printf("request to %s", url)
-
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return "", fmt.Errorf("failed to create HTTP request: %v", err)
-	}
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return "", fmt.Errorf("HTTP request failed: %v", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
-		return "", fmt.Errorf("failed to get container ID: %s", body)
-	}
-
-	var containerInfo map[string]interface{}
-	if err := json.NewDecoder(resp.Body).Decode(&containerInfo); err != nil {
-		return "", fmt.Errorf("failed to decode JSON: %v", err)
-	}
-
-	containerID := containerInfo["Id"].(string)
-	return containerID, nil
 }
 
 func WebhookHandler() fiber.Handler {
@@ -85,21 +50,15 @@ func WebhookHandler() fiber.Handler {
 func clientRestart(imageName string) error {
 
 	client_container_name := "vacation_promotion_server"
-	client_container_id, err := getContainerID(client_container_name)
-	if err != nil {
-		log.Printf("Failed to get container ID: %v", err)
-		return fiber.NewError(fiber.StatusInternalServerError, "Internal server error")
-	}
+
 	//client stop
-	if err := dockerRequest("POST", fmt.Sprintf("/containers/%s/stop", client_container_id), nil); err != nil {
+	if err := dockerRequest("POST", fmt.Sprintf("/containers/%s/stop", client_container_name), nil); err != nil {
 		log.Printf("Failed to stop client container: %v", err)
-		return fiber.NewError(fiber.StatusInternalServerError, "Internal server error")
 	}
 
 	//client rm -f
 	if err := dockerRequest("DELETE", fmt.Sprintf("/containers/%s", client_container_name), nil); err != nil {
 		log.Printf("Failed to remove client container: %v", err)
-		return fiber.NewError(fiber.StatusInternalServerError, "Internal server error")
 	}
 
 	//compose pull client
@@ -136,14 +95,9 @@ func serverRestart(imageName string) error {
 	}
 
 	server_container_name := "vacation_promotion_server"
-	server_container_id, err := getContainerID(server_container_name)
-	if err != nil {
-		log.Printf("Failed to get container ID: %v", err)
-		return fiber.NewError(fiber.StatusInternalServerError, "Internal server error")
-	}
 
 	//docker restart server
-	if err := dockerRequest("POST", fmt.Sprintf("/containers/%s/restart", server_container_id), nil); err != nil {
+	if err := dockerRequest("POST", fmt.Sprintf("/containers/%s/restart", server_container_name), nil); err != nil {
 		log.Printf("Failed to restart container: %v", err)
 		return fiber.NewError(fiber.StatusInternalServerError, "Internal server error")
 	}
@@ -185,10 +139,5 @@ func dockerRequest(method, command string, jsonData []byte) error {
 		return fmt.Errorf("HTTP request failed: %v", err)
 	}
 	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusCreated {
-		body, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("failed to create container: %s", body)
-	}
 	return nil
 }
