@@ -49,14 +49,16 @@ func WebhookHandler() fiber.Handler {
 }
 
 func clientRestart(imageName string) error {
+
+	client_container_name := "vacation_promotion_server"
 	//client stop
-	if err := dockerRequest("POST", "/containers/client/stop", nil); err != nil {
+	if err := dockerRequest("POST", fmt.Sprintf("/containers/%s/stop", client_container_name), nil); err != nil {
 		log.Printf("Failed to stop client container: %v", err)
 		return fiber.NewError(fiber.StatusInternalServerError, "Internal server error")
 	}
 
 	//client rm -f
-	if err := dockerRequest("DELETE", "/containers/client", nil); err != nil {
+	if err := dockerRequest("DELETE", fmt.Sprintf("/containers/%s", client_container_name), nil); err != nil {
 		log.Printf("Failed to remove client container: %v", err)
 		return fiber.NewError(fiber.StatusInternalServerError, "Internal server error")
 	}
@@ -94,8 +96,10 @@ func serverRestart(imageName string) error {
 		return err
 	}
 
+	server_container_name := "vacation_promotion_server"
+
 	//docker restart server
-	if err := dockerRequest("POST", "/containers/server/restart", nil); err != nil {
+	if err := dockerRequest("POST", fmt.Sprintf("/containers/%s/restart", server_container_name), nil); err != nil {
 		log.Printf("Failed to restart container: %v", err)
 		return fiber.NewError(fiber.StatusInternalServerError, "Internal server error")
 	}
@@ -116,7 +120,7 @@ func dockerRequest(method, command string, jsonData []byte) error {
 	hostIP := os.Getenv("HOST_IP") // 환경 변수에서 호스트 IP 주소 가져오기
 
 	url := "http://" + hostIP + ":2375" + command
-	fmt.Printf("request to %s", url)
+	log.Printf("request to %s", url)
 
 	var req *http.Request
 	var err error
