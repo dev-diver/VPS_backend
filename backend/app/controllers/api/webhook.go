@@ -6,6 +6,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 
 	"github.com/gofiber/fiber/v2"
@@ -134,7 +135,7 @@ func serverRestart(imageName string) error {
 }
 
 func imagePull(imageName string) error {
-	pullImageUrl := fmt.Sprintf("/images/create?fromImage=%s", imageName)
+	pullImageUrl := fmt.Sprintf("/images/create?fromImage=%s", url.QueryEscape(imageName+":latest"))
 	if err := dockerRequest("POST", pullImageUrl, nil); err != nil {
 		log.Printf("Failed to pull images: %v", err)
 		return fiber.NewError(fiber.StatusInternalServerError, "Internal server error")
