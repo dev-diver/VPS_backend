@@ -134,7 +134,7 @@ func serverRestart(imageName string) error {
 }
 
 func imagePull(imageName string) error {
-	pullImageUrl := fmt.Sprintf("/images/create?fromImage=%s:latest", imageName)
+	pullImageUrl := fmt.Sprintf("/images/create?fromImage=%s&tag=latest", imageName)
 	if err := dockerRequest("POST", pullImageUrl, nil); err != nil {
 		log.Printf("Failed to pull images: %v", err)
 		return fiber.NewError(fiber.StatusInternalServerError, "Internal server error")
