@@ -106,13 +106,15 @@ func clientRestartWithSocket() error {
 func serverRestartWithSocket() error {
 
 	log.Printf("docker compose pull server ")
-	if err := exec.Command("docker-compose", "pull", "server").Run(); err != nil {
+	cmd := exec.Command("/bin/bash", "-c", "docker compose pull server")
+	if err := cmd.Run(); err != nil {
 		log.Printf("Failed to pull server: %v", err)
 		return fiber.NewError(fiber.StatusInternalServerError, "Internal server error")
 	}
 
 	log.Printf("docker compose up -d server ")
-	if err := exec.Command("docker", "compose", "up", "-d", "server").Run(); err != nil {
+	cmd = exec.Command("/bin/bash", "-c", "docker compose up -d server")
+	if err := cmd.Run(); err != nil {
 		log.Printf("Failed to start server container: %v", err)
 		return fiber.NewError(fiber.StatusInternalServerError, "Internal server error")
 	}
