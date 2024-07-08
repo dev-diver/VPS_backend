@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
+	"strings"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -284,19 +285,19 @@ func HaveUpdateHandler() fiber.Handler {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid service"})
 		}
 
-		latestTag, err := getLatestDockerTag("devdiver", imageName)
+		latestDigest, err := getLatestDockerDigest("devdiver", imageName)
 		if err != nil {
 			return err
 		}
-		log.Printf("Latest tag for %s: %s", imageName, latestTag)
+		log.Printf("Latest digest for %s: %s", imageName, latestDigest)
 
-		currentTag, err := getCurrentImageTag(imageName)
+		currentDigest, err := getCurrentImageDigest(imageName)
 		if err != nil {
 			return err
 		}
-		log.Printf("Current tag for %s: %s", imageName, currentTag)
+		log.Printf("Current digest for %s: %s", imageName, currentDigest)
 
-		if currentTag != latestTag {
+		if currentDigest != latestDigest {
 			return c.JSON(fiber.Map{"update": true})
 		} else {
 			return c.JSON(fiber.Map{"update": false})
@@ -306,12 +307,12 @@ func HaveUpdateHandler() fiber.Handler {
 
 type TagResponse struct {
 	Results []struct {
-		Name string `json:"name"`
+		Digest string `json:"digest"`
 	} `json:"results"`
 }
 
-func getLatestDockerTag(repo, image string) (string, error) {
-	url := fmt.Sprintf("https://hub.docker.com/v2/repositories/%s/%s/tags", repo, image)
+func getLatestDockerDigest(repo, image string) (string, error) {
+	url := fmt.Sprintf("https://hub.docker.com/v2/repositories/%s/%s/tags/latest", repo, image)
 
 	// Create a custom HTTP client to skip TLS verification
 	client := &http.Client{
@@ -327,22 +328,23 @@ func getLatestDockerTag(repo, image string) (string, error) {
 	}
 	defer resp.Body.Close()
 
-	var tags TagResponse
-	if err := json.NewDecoder(resp.Body).Decode(&tags); err != nil {
+	var tagResponse TagResponse
+	if err := json.NewDecoder(resp.Body).Decode(&tagResponse); err != nil {
 		return "", err
 	}
 
-	if len(tags.Results) > 0 {
-		return tags.Results[0].Name, nil
+	if len(tagResponse.Results) > 0 {
+		return tagResponse.Results[0].Digest, nil
 	}
-	return "", fmt.Errorf("no tags found")
+	return "", fmt.Errorf("no digests found")
 }
 
-func getCurrentImageTag(containerName string) (string, error) {
-	cmd := exec.Command("docker", "inspect", "--format='{{.Config.Image}}'", containerName)
+func getCurrentImageDigest(containerName string) (string, error) {
+	cmd := exec.Command("docker", "inspect", "--format='{{index .RepoDigests 0}}'", containerName)
 	output, err := cmd.Output()
 	if err != nil {
 		return "", err
 	}
-	return string(output), nil
+	digest := strings.Split(string(output), "@")[1]
+	return strings.TrimSpace(digest), nil
 }
