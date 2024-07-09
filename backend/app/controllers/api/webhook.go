@@ -173,7 +173,7 @@ func clientRestartWithAPI() error {
 			"/dist": {}
 		},
 		"HostConfig": {
-			"Binds": ["vps_central_front_app:/dist"],
+			"Binds": ["vps_central_front_app:/dist"]
 		},
 		"Cmd": ["sh", "-c", "rm -rf /dist/* && mv /app/front_web/dist/* /dist && bin/true"]
 	}`)
