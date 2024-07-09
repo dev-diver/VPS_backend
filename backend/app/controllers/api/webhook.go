@@ -44,14 +44,14 @@ func WebhookHandler() fiber.Handler {
 			// if err := clientRestart(imageName); err != nil {
 			// 	return err
 			// }
-			if err := clientRestartWithSocket(); err != nil {
+			if err := clientRestartWithAPI(); err != nil {
 				return err
 			}
 		} else if imageName == "devdiver/vacation_promotion_server" {
 			// if err := serverRestart(imageName); err != nil {
 			// 	return err
 			// }
-			if err := serverRestartWithSocket(); err != nil {
+			if err := serverRestartWithAPI(); err != nil {
 				return err
 			}
 		} else {
@@ -144,8 +144,9 @@ func serverRestartWithSocket() error {
 	return nil
 }
 
-func clientRestart(imageName string) error {
+func clientRestartWithAPI() error {
 
+	imageName := "client"
 	client_container_name := "vacation_promotion_client"
 
 	//client stop
@@ -166,11 +167,16 @@ func clientRestart(imageName string) error {
 
 	//compose run -d client
 	runContainerData := []byte(`{
+		"Hostname": "client",
+		"Domainname": "vps_central",
 		"Image": "devdiver/vacation_promotion_client:latest",
+		"Volumes": {
+			"/dist": {}
+		},
 		"HostConfig": {
 			"Binds": ["vps_central_front_app:/dist"],
-			"Command": ["sh", "-c", "rm -rf /dist/* && mv /app/front_web/dist/* /dist && bin/true"]
-		}
+		},
+		"Cmd": ["sh", "-c", "rm -rf /dist/* && mv /app/front_web/dist/* /dist && bin/true"]
 	}`)
 	if err := dockerRequest("POST", fmt.Sprintf("/containers/create?name=%s", client_container_name), runContainerData); err != nil {
 		log.Printf("Failed to create container: %v", err)
@@ -185,7 +191,9 @@ func clientRestart(imageName string) error {
 	return nil
 }
 
-func serverRestart(imageName string) error {
+func serverRestartWithAPI() error {
+
+	imageName := "server"
 
 	//image pull server
 	if err := imagePull(imageName); err != nil {
@@ -195,25 +203,39 @@ func serverRestart(imageName string) error {
 
 	server_container_name := "vacation_promotion_server"
 
-	// log.Println("Creating and starting server container...")
-	// runContainerData := []byte(`{
-	// 	"Image": "devdiver/vacation_promotion_server:latest",
-	// 	"Env": ["HOST_IP=${HOST_IP}"],
-	// 	"HostConfig": {
-	// 		"Binds": [
-	// 			"config:/app/backend/config",
-	// 			"database:/app/backend/database",
-	// 			"front_app:/app/dist"
-	// 		],
-	// 		"PortBindings": {
-	// 			"3000/tcp": [{"HostPort": "3000"}]
-	// 		}
-	// 	}
-	// }`)
-	// if err := dockerRequest("POST", fmt.Sprintf("/containers/create?name=%s", server_container_name), runContainerData); err != nil {
-	// 	log.Printf("Failed to create server container: %v", err)
-	// 	return err
-	// }
+	log.Println("Creating and starting server container...")
+	runContainerData := []byte(`{
+		"Hostname": "server",
+		"Domainname": "vps_central",
+		"Image": "devdiver/vacation_promotion_server:latest",
+		"Volumes": {
+			"/vps_central/config": {},
+			"/vps_central/database": {},
+			"/dist": {}
+		},
+		"ExposedPorts": {
+			"3000/tcp": {}
+		},
+		"HostConfig": {
+			"Binds": [
+				"/var/run/docker.sock:/var/run/docker.sock",
+				"vps_central_config:/vps_central/config",
+				"vps_central_database:/vps_central/database",
+				"vps_central_front_app:/dist"
+			],
+			"PortBindings": {
+				"3000/tcp": [{"HostPort": "3000"}]
+			},
+			"Privileged": false,
+			"RestartPolicy": {
+				"Name": "always"
+			}
+		}
+	}`)
+	if err := dockerRequest("POST", fmt.Sprintf("/containers/create?name=%s", server_container_name), runContainerData); err != nil {
+		log.Printf("Failed to create server container: %v", err)
+		return err
+	}
 
 	// if err := dockerRequest("POST", fmt.Sprintf("/containers/%s/start", server_container_name), nil); err != nil {
 	// 	log.Printf("Failed to start server container: %v", err)
