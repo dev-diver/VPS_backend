@@ -304,35 +304,57 @@ func HaveUpdateHandler() fiber.Handler {
 	}
 }
 
+type Descriptor struct {
+	MediaType string `json:"mediaType"`
+	Digest    string `json:"digest"`
+	Size      int    `json:"size"`
+	Platform  struct {
+		Architecture string `json:"architecture"`
+		OS           string `json:"os"`
+	} `json:"platform"`
+}
 type Manifest struct {
-	SchemaVersion int    `json:"schemaVersion"`
-	MediaType     string `json:"mediaType"`
-	Config        struct {
-		MediaType string `json:"mediaType"`
-		Size      int    `json:"size"`
-		Digest    string `json:"digest"`
-	} `json:"config"`
-	Layers []struct {
-		MediaType string `json:"mediaType"`
-		Size      int    `json:"size"`
-		Digest    string `json:"digest"`
-	} `json:"layers"`
+	Ref         string     `json:"Ref"`
+	Descriptor  Descriptor `json:"Descriptor"`
+	Raw         string     `json:"Raw"`
+	OCIManifest struct {
+		SchemaVersion int    `json:"schemaVersion"`
+		MediaType     string `json:"mediaType"`
+		Config        struct {
+			MediaType string `json:"mediaType"`
+			Digest    string `json:"digest"`
+			Size      int    `json:"size"`
+		} `json:"config"`
+		Layers []struct {
+			MediaType   string `json:"mediaType"`
+			Digest      string `json:"digest"`
+			Size        int    `json:"size"`
+			Annotations struct {
+				PredicateType string `json:"in-toto.io/predicate-type"`
+			} `json:"annotations,omitempty"`
+		} `json:"layers"`
+	} `json:"OCIManifest"`
 }
 
 func getLatestDockerDigest(image string) (string, error) {
-	cmd := exec.Command("docker", "manifest", "inspect", image)
+	cmd := exec.Command("docker", "manifest", "inspect", image+":latest", "-v")
 	var out bytes.Buffer
 	cmd.Stdout = &out
 	if err := cmd.Run(); err != nil {
 		return "", fmt.Errorf("failed to inspect manifest: %v", err)
 	}
 
-	var manifest Manifest
-	if err := json.Unmarshal(out.Bytes(), &manifest); err != nil {
+	log.Printf("Manifest: %s", out.String())
+
+	var manifests []Manifest
+	if err := json.Unmarshal(out.Bytes(), &manifests); err != nil {
 		return "", fmt.Errorf("failed to unmarshal manifest: %v", err)
 	}
 
-	return manifest.Config.Digest, nil
+	if len(manifests) > 0 {
+		return manifests[0].Descriptor.Digest, nil
+	}
+	return "", fmt.Errorf("no manifests found")
 }
 
 func getCurrentImageDigest(containerName string) (string, error) {
