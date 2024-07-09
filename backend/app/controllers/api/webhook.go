@@ -67,7 +67,7 @@ func getShell() string {
 	shell := os.Getenv("SHELL")
 	if shell == "" {
 		// 기본적으로 sh 사용
-		shell = "/bin/sh"
+		shell = "/bin/bash"
 	}
 	return shell
 }
@@ -78,7 +78,7 @@ func execCommand(command string, args ...string) error {
 	cmd := exec.Command(shell, fullCommand...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	cmd.Env = os.Environ()
+	log.Printf("Running command: %v", cmd)
 
 	if err := cmd.Run(); err != nil {
 		return err
@@ -91,25 +91,21 @@ func clientRestartWithSocket() error {
 
 	containerName := "vacation_promotion_client"
 	newName := containerName + "_old"
-	log.Printf("rename client")
 	if err := execCommand("docker", "rename", containerName, newName); err != nil {
 		log.Printf("Failed to stop client container: %v", err)
 		return fiber.NewError(fiber.StatusInternalServerError, "Internal server error")
 	}
 
-	log.Printf("docker compose pull client")
 	if err := execCommand("docker", "compose", "pull", "client"); err != nil {
 		log.Printf("Failed to pull client: %v", err)
 		return fiber.NewError(fiber.StatusInternalServerError, "Internal server error")
 	}
 
-	log.Printf("docker compose up -d client ")
 	if err := execCommand("docker", "compose", "up", "client", "-d"); err != nil {
 		log.Printf("Failed to start client container: %v", err)
 		return fiber.NewError(fiber.StatusInternalServerError, "Internal server error")
 	}
 
-	log.Printf("docker rm -f client ")
 	if err := execCommand("docker", "rm", "-f", newName); err != nil {
 		log.Printf("Failed to remove client container: %v", err)
 		return fiber.NewError(fiber.StatusInternalServerError, "Internal server error")
@@ -122,25 +118,21 @@ func serverRestartWithSocket() error {
 
 	// containerName := "vacation_promotion_server"
 	// newName := containerName + "_old"
-	// log.Printf("rename server")
 	// if err := execCommand("docker", "rename", containerName, newName); err != nil {
 	// 	log.Printf("Failed to stop server container: %v", err)
 	// 	return fiber.NewError(fiber.StatusInternalServerError, "Internal server error")
 	// }
 
-	log.Printf("docker compose pull server")
 	if err := execCommand("docker", "compose", "pull", "server"); err != nil {
 		log.Printf("Failed to pull server: %v", err)
 		return fiber.NewError(fiber.StatusInternalServerError, "Internal server error")
 	}
 
-	log.Printf("docker compose up -d server")
 	if err := execCommand("docker", "compose", "up", "server", "-d"); err != nil {
 		log.Printf("Failed to start server container: %v", err)
 		return fiber.NewError(fiber.StatusInternalServerError, "Internal server error")
 	}
 
-	// log.Printf("docker rm -f server ")
 	// if err := execCommand("docker", "rm", "-f", newName); err != nil {
 	// 	log.Printf("Failed to remove server container: %v", err)
 	// 	return fiber.NewError(fiber.StatusInternalServerError, "Internal server error")
