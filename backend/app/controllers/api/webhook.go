@@ -146,7 +146,6 @@ func serverRestartWithSocket() error {
 
 func clientRestartWithAPI() error {
 
-	imageName := "client"
 	client_container_name := "vacation_promotion_client"
 
 	//client stop
@@ -160,7 +159,7 @@ func clientRestartWithAPI() error {
 	}
 
 	//compose pull client
-	if err := imagePull(imageName); err != nil {
+	if err := imagePull("devdiver/" + client_container_name); err != nil {
 		log.Printf("Failed to pull client %v", err)
 		return err
 	}
@@ -193,15 +192,13 @@ func clientRestartWithAPI() error {
 
 func serverRestartWithAPI() error {
 
-	imageName := "server"
+	server_container_name := "vacation_promotion_server"
 
 	//image pull server
-	if err := imagePull(imageName); err != nil {
+	if err := imagePull("devdiver/" + server_container_name); err != nil {
 		log.Printf("Failed to pull server %v", err)
 		return err
 	}
-
-	server_container_name := "vacation_promotion_server"
 
 	log.Println("Creating and starting server container...")
 	runContainerData := []byte(`{
