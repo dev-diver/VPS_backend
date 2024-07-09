@@ -358,12 +358,13 @@ func getLatestDockerDigest(image string) (string, error) {
 }
 
 func getCurrentImageDigest(imageName string) (string, error) {
-	cmd := exec.Command("docker", "inspect", "--format='{{json .RepoDigests}}'", imageName)
+	cmd := exec.Command("docker", "inspect", "--format={{json .RepoDigests}}", imageName)
 	output, err := cmd.Output()
 	if err != nil {
 		return "", err
 	}
 
+	log.Printf("Inspect output: %s", output)
 	var repoDigests []string
 	if err := json.Unmarshal(output, &repoDigests); err != nil {
 		return "", fmt.Errorf("failed to unmarshal inspect data: %v", err)
