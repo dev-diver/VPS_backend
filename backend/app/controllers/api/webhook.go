@@ -2,7 +2,7 @@ package api
 
 import (
 	"bytes"
-	"crypto/tls"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
@@ -277,24 +277,24 @@ func HaveUpdateHandler() fiber.Handler {
 
 		var imageName string
 		if serviceName == "server" {
-			imageName = "vacation_promotion_server"
+			imageName = "devdiver/vacation_promotion_server"
 		} else if serviceName == "client" {
-			imageName = "vacation_promotion_client"
+			imageName = "devdiver/vacation_promotion_client"
 		} else {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid service"})
 		}
 
-		latestDigest, err := getLatestDockerDigest("devdiver", imageName)
+		latestDigest, err := getLatestDockerDigest(imageName)
 		if err != nil {
 			return err
 		}
 		log.Printf("Latest digest for %s: %s", imageName, latestDigest)
 
-		currentDigest, err := getCurrentImageDigest(imageName)
+		currentDigest, err := getCurrentImageDigest(serviceName)
 		if err != nil {
 			return err
 		}
-		log.Printf("Current digest for %s: %s", imageName, currentDigest)
+		log.Printf("Current digest for %s: %s", serviceName, currentDigest)
 
 		if currentDigest != latestDigest {
 			return c.JSON(fiber.Map{"update": true})
@@ -304,41 +304,35 @@ func HaveUpdateHandler() fiber.Handler {
 	}
 }
 
-type TagResponse struct {
-	Results []struct {
-		Digest string `json:"digest"`
-	} `json:"results"`
+type Manifest struct {
+	SchemaVersion int    `json:"schemaVersion"`
+	MediaType     string `json:"mediaType"`
+	Config        struct {
+		MediaType string `json:"mediaType"`
+		Size      int    `json:"size"`
+		Digest    string `json:"digest"`
+	} `json:"config"`
+	Layers []struct {
+		MediaType string `json:"mediaType"`
+		Size      int    `json:"size"`
+		Digest    string `json:"digest"`
+	} `json:"layers"`
 }
 
-func getLatestDockerDigest(repo, image string) (string, error) {
-	url := fmt.Sprintf("https://registry.hub.docker.com/v2/%s/%s/manifests/latest", repo, image)
-
-	// Create a custom HTTP client to skip TLS verification
-	client := &http.Client{
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-		},
+func getLatestDockerDigest(image string) (string, error) {
+	cmd := exec.Command("docker", "manifest", "inspect", image)
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	if err := cmd.Run(); err != nil {
+		return "", fmt.Errorf("failed to inspect manifest: %v", err)
 	}
 
-	// Make the request using the custom client
-	req, err := http.NewRequest("HEAD", url, nil)
-	if err != nil {
-		return "", err
-	}
-	req.Header.Set("Accept", "application/vnd.docker.distribution.manifest.v2+json")
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-
-	digest := resp.Header.Get("Docker-Content-Digest")
-	if digest == "" {
-		return "", fmt.Errorf("no Docker-Content-Digest header found")
+	var manifest Manifest
+	if err := json.Unmarshal(out.Bytes(), &manifest); err != nil {
+		return "", fmt.Errorf("failed to unmarshal manifest: %v", err)
 	}
 
-	return digest, nil
+	return manifest.Config.Digest, nil
 }
 
 func getCurrentImageDigest(containerName string) (string, error) {
