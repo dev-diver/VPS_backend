@@ -5,11 +5,11 @@ services:
     image: mariadb:10.2
     container_name: mariadb
     env_file:
-      - database/.env
+      - ./database/.env
     volumes:
       - mariadb_data:/var/lib/mysql
-      - database/conf.d:/etc/mysql/conf.d
-      - database/initd.d:/docker-entrypoint-initdb.d
+      - ./database/conf.d:/etc/mysql/conf.d
+      - ./database/initd.d:/docker-entrypoint-initdb.d
     ports:
       - "3306:3306"
     entrypoint: ["sh", "-c", "chown -R mysql:mysql /var/lib/mysql && chmod 644 /etc/mysql/conf.d/*.cnf && docker-entrypoint.sh mysqld"]
