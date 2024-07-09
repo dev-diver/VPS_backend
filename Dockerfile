@@ -43,4 +43,4 @@ WORKDIR /vps_central
 EXPOSE 3000
 
 # 애플리케이션 실행
-CMD ["/app/backend/server"]
+CMD ["/vps_central/server"]
