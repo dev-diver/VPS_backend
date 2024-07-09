@@ -63,10 +63,22 @@ func WebhookHandler() fiber.Handler {
 	}
 }
 
-func execCommand(command string, arg ...string) error {
-	cmd := exec.Command(command, arg...)
+func getShell() string {
+	shell := os.Getenv("SHELL")
+	if shell == "" {
+		// 기본적으로 sh 사용
+		shell = "/bin/sh"
+	}
+	return shell
+}
+
+func execCommand(command string, args ...string) error {
+	shell := getShell()
+	fullCommand := append([]string{"-c", command}, args...)
+	cmd := exec.Command(shell, fullCommand...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
+	cmd.Env = os.Environ()
 
 	if err := cmd.Run(); err != nil {
 		return err
@@ -80,7 +92,7 @@ func clientRestartWithSocket() error {
 	containerName := "vacation_promotion_client"
 	newName := containerName + "_old"
 	log.Printf("rename client")
-	if err := exec.Command("docker", "rename", containerName, newName).Run(); err != nil {
+	if err := execCommand("docker", "rename", containerName, newName); err != nil {
 		log.Printf("Failed to stop client container: %v", err)
 		return fiber.NewError(fiber.StatusInternalServerError, "Internal server error")
 	}
@@ -111,7 +123,7 @@ func serverRestartWithSocket() error {
 	containerName := "vacation_promotion_server"
 	newName := containerName + "_old"
 	log.Printf("rename server")
-	if err := exec.Command("docker", "rename", containerName, newName).Run(); err != nil {
+	if err := execCommand("docker", "rename", containerName, newName); err != nil {
 		log.Printf("Failed to stop server container: %v", err)
 		return fiber.NewError(fiber.StatusInternalServerError, "Internal server error")
 	}

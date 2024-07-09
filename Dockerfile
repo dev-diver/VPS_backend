@@ -11,8 +11,6 @@ RUN apt-get update && apt-get install -y \
   echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian $(. /etc/os-release && echo \"$VERSION_CODENAME\") stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null && \
   apt-get update && \
   apt-get install -y docker-ce docker-ce-cli && \
-  # curl -L "https://github.com/docker/compose/releases/download/v2.12.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose && \
-  # chmod +x /usr/local/bin/docker-compose && \
   update-ca-certificates && \
   curl -L https://github.com/regclient/regclient/releases/latest/download/regctl-linux-amd64 > /usr/local/bin/regctl && \
   chmod +x /usr/local/bin/regctl && \
@@ -20,8 +18,8 @@ RUN apt-get update && apt-get install -y \
 
 RUN groupadd -f docker && usermod -aG docker root
 
-COPY /docker-compose.yml /vps_central/docker-compose.yml
 COPY /backend /vps_central
+COPY /docker-compose.yml /vps_central/docker-compose.yml
 
 WORKDIR /vps_central
 # Go 모듈 정리
