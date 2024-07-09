@@ -22,9 +22,9 @@ services:
     #   - HOST_IP=${HOST_IP}
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - /app/backend/config:/app/backend/config
-      - /app/backend/config:/app/backend/database
-      - front_app:/app/dist
+      - config:/vps_central/config
+      - database:/vps_central/database
+      - front_app:/dist
     ports:
       - "3000:3000"
     restart: always
@@ -52,15 +52,15 @@ services:
 volumes:
   mariadb_data:
   front_app:
-  # database:
-  #   driver: local
-  #   driver_opts:
-  #     type: none
-  #     o: bind
-  #     device: ./database
-  # config:
-  #   driver: local
-  #   driver_opts:
-  #     type: none
-  #     o: bind
-  #     device: ./config
+  database:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./database
+  config:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./config

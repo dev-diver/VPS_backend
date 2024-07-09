@@ -18,8 +18,8 @@ RUN apt-get update && apt-get install -y \
 
 RUN groupadd -f docker && usermod -aG docker root
 
-COPY /docker-compose.yml /app/backend/docker-compose.yml
-COPY /backend /app/backend
+COPY /docker-compose.yml /vps_central/docker-compose.yml
+COPY /backend /vps_central
 
 WORKDIR /app/backend
 # Go 모듈 정리
@@ -37,7 +37,7 @@ RUN go build -o server
 # COPY --from=builder /usr/local/bin/docker-compose /usr/local/bin/docker-compose
 # COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 
-WORKDIR /app/backend
+WORKDIR /vps_central
 
 # 포트 설정
 EXPOSE 3000
