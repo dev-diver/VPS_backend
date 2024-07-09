@@ -79,6 +79,7 @@ func execCommand(command string, args ...string) error {
 	cmd := exec.Command(shell, "-c", groupCommand)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
+	cmd.Env = os.Environ()
 
 	log.Printf("Running command: %v", cmd)
 
