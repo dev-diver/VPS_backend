@@ -18,8 +18,8 @@ services:
   server:
     image: devdiver/vacation_promotion_server:latest
     container_name: vacation_promotion_server
-    # environment:
-    #   - HOST_IP=${HOST_IP}
+    environment:
+      - HOST_IP=${HOST_IP}
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - config:/vps_central/config
