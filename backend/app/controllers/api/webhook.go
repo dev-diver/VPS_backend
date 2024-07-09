@@ -290,7 +290,7 @@ func HaveUpdateHandler() fiber.Handler {
 		}
 		log.Printf("Latest digest for %s: %s", imageName, latestDigest)
 
-		currentDigest, err := getCurrentImageDigest(serviceName)
+		currentDigest, err := getCurrentImageDigest("vacation_promotion_" + serviceName)
 		if err != nil {
 			return err
 		}
@@ -358,14 +358,22 @@ func getLatestDockerDigest(image string) (string, error) {
 }
 
 func getCurrentImageDigest(containerName string) (string, error) {
-	cmd := exec.Command("docker", "inspect", "--format='{{index .RepoDigests 0}}'", containerName)
+	cmd := exec.Command("docker", "inspect", containerName)
 	output, err := cmd.Output()
 	if err != nil {
 		return "", err
 	}
-	parts := strings.Split(string(output), "@")
-	if len(parts) != 2 {
-		return "", fmt.Errorf("unexpected output: %s", output)
+
+	var inspectData []struct {
+		Id string `json:"Id"`
 	}
-	return strings.TrimSpace(parts[1]), nil
+	if err := json.Unmarshal(output, &inspectData); err != nil {
+		return "", fmt.Errorf("failed to unmarshal inspect data: %v", err)
+	}
+
+	if len(inspectData) > 0 {
+		return strings.TrimSpace(inspectData[0].Id), nil
+	}
+
+	return "", fmt.Errorf("no digests found")
 }
