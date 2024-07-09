@@ -120,13 +120,13 @@ func clientRestartWithSocket() error {
 
 func serverRestartWithSocket() error {
 
-	containerName := "vacation_promotion_server"
-	newName := containerName + "_old"
-	log.Printf("rename server")
-	if err := execCommand("docker", "rename", containerName, newName); err != nil {
-		log.Printf("Failed to stop server container: %v", err)
-		return fiber.NewError(fiber.StatusInternalServerError, "Internal server error")
-	}
+	// containerName := "vacation_promotion_server"
+	// newName := containerName + "_old"
+	// log.Printf("rename server")
+	// if err := execCommand("docker", "rename", containerName, newName); err != nil {
+	// 	log.Printf("Failed to stop server container: %v", err)
+	// 	return fiber.NewError(fiber.StatusInternalServerError, "Internal server error")
+	// }
 
 	log.Printf("docker compose pull server")
 	if err := execCommand("docker", "compose", "pull", "server"); err != nil {
@@ -140,11 +140,11 @@ func serverRestartWithSocket() error {
 		return fiber.NewError(fiber.StatusInternalServerError, "Internal server error")
 	}
 
-	log.Printf("docker rm -f server ")
-	if err := execCommand("docker", "rm", "-f", newName); err != nil {
-		log.Printf("Failed to remove server container: %v", err)
-		return fiber.NewError(fiber.StatusInternalServerError, "Internal server error")
-	}
+	// log.Printf("docker rm -f server ")
+	// if err := execCommand("docker", "rm", "-f", newName); err != nil {
+	// 	log.Printf("Failed to remove server container: %v", err)
+	// 	return fiber.NewError(fiber.StatusInternalServerError, "Internal server error")
+	// }
 
 	return nil
 }
