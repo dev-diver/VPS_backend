@@ -74,8 +74,8 @@ func getShell() string {
 
 func execCommand(command string, args ...string) error {
 	shell := getShell()
-	fullCommand := append([]string{"-c", command}, args...)
-	cmd := exec.Command(shell, fullCommand...)
+	fullCommand := fmt.Sprintf("%s %s", command, args)
+	cmd := exec.Command(shell, "-c", fullCommand)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
