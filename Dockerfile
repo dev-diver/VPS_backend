@@ -11,9 +11,11 @@ RUN apt-get update && apt-get install -y \
   echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian $(. /etc/os-release && echo \"$VERSION_CODENAME\") stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null && \
   apt-get update && \
   apt-get install -y docker-ce docker-ce-cli && \
-  curl -L "https://github.com/docker/compose/releases/download/v2.12.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose && \
-  chmod +x /usr/local/bin/docker-compose && \
+  # curl -L "https://github.com/docker/compose/releases/download/v2.12.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose && \
+  # chmod +x /usr/local/bin/docker-compose && \
   update-ca-certificates && \
+  curl -L https://github.com/regclient/regclient/releases/latest/download/regctl-linux-amd64 > /usr/local/bin/regctl && \
+  chmod +x /usr/local/bin/regctl && \
   rm -rf /var/lib/apt/lists/*
 
 RUN groupadd -f docker && usermod -aG docker root
@@ -35,6 +37,7 @@ RUN go build -o server
 # COPY --from=builder /app/backend/ /app/backend/
 # COPY --from=builder /usr/bin/docker /usr/bin/docker
 # COPY --from=builder /usr/local/bin/docker-compose /usr/local/bin/docker-compose
+# COPY --from=builder /usr/local/bin/regctl /usr/local/bin/regctl
 # COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 
 WORKDIR /vps_central

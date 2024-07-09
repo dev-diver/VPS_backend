@@ -2,7 +2,6 @@ package api
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"io"
 	"log"
@@ -10,8 +9,8 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
-	"regexp"
 	"strings"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -269,66 +268,6 @@ func dockerRequest(method, command string, jsonData []byte) error {
 	return nil
 }
 
-func CheckUpdateHandler() fiber.Handler {
-	return func(c *fiber.Ctx) error {
-
-		serviceName := c.Query("service")
-		if serviceName == "" {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request"})
-		}
-
-		var imageName string
-		if serviceName == "server" {
-			imageName = "devdiver/vacation_promotion_server"
-		} else if serviceName == "client" {
-			imageName = "devdiver/vacation_promotion_client"
-		} else {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid service"})
-		}
-
-		cmd := exec.Command("docker", "run", "--rm",
-			"-v", "/var/run/docker.sock:/var/run/docker.sock",
-			"--name", "watchtower",
-			"containrrr/watchtower",
-			"--run-once",
-			"--monitor-only",
-			"--label-enable",
-			imageName)
-		output, err := cmd.CombinedOutput()
-		log.Printf("Output: %s", output)
-		if err != nil {
-			log.Printf("Error executing command: %v", err)
-			return c.Status(http.StatusInternalServerError).JSON(fiber.Map{
-				"status": "error",
-				"output": string(output),
-				"error":  err.Error(),
-			})
-		}
-
-		updateAvailable := parseWatchtowerOutput(string(output))
-		return c.JSON(fiber.Map{
-			"status":          "success",
-			"updateAvailable": updateAvailable,
-			"output":          string(output),
-		})
-	}
-}
-
-func parseWatchtowerOutput(output string) bool {
-	lines := strings.Split(output, "\n")
-	for _, line := range lines {
-		if strings.Contains(line, "Session done") {
-			re := regexp.MustCompile(`Failed=(\d+) Scanned=(\d+) Updated=(\d+) notify=(\w+)`)
-			matches := re.FindStringSubmatch(line)
-			if len(matches) == 5 {
-				updated := matches[3]
-				return updated != "0"
-			}
-		}
-	}
-	return false
-}
-
 func HaveUpdateHandler() fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		serviceName := c.Query("service")
@@ -345,106 +284,66 @@ func HaveUpdateHandler() fiber.Handler {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid service"})
 		}
 
-		latestDigest, err := getLatestDockerDigest(imageName)
+		remoteCreated, err := getRemoteImageCreatedTime(imageName)
 		if err != nil {
 			return err
 		}
-		log.Printf("Latest digest for %s: %s", imageName, latestDigest)
+		log.Printf("Latest digest for %s: %s", imageName, remoteCreated)
 
-		currentDigest, err := getCurrentImageDigest(imageName)
+		localCreated, err := getLocalImageCreatedTime(imageName)
 		if err != nil {
 			return err
 		}
-		log.Printf("Current digest for %s: %s", serviceName, currentDigest)
+		log.Printf("Current digest for %s: %s", serviceName, localCreated)
 
-		if currentDigest != latestDigest {
+		if remoteCreated.After(localCreated) {
 			return c.JSON(fiber.Map{
 				"update":  true,
-				"latest":  latestDigest,
-				"current": currentDigest,
+				"latest":  remoteCreated,
+				"current": localCreated,
 			})
 		} else {
 			return c.JSON(fiber.Map{
 				"update":  false,
-				"latest":  latestDigest,
-				"current": currentDigest,
+				"latest":  remoteCreated,
+				"current": localCreated,
 			})
 		}
 	}
 }
 
-type Descriptor struct {
-	MediaType string `json:"mediaType"`
-	Digest    string `json:"digest"`
-	Size      int    `json:"size"`
-	Platform  struct {
-		Architecture string `json:"architecture"`
-		OS           string `json:"os"`
-	} `json:"platform"`
-}
-type Manifest struct {
-	Ref         string     `json:"Ref"`
-	Descriptor  Descriptor `json:"Descriptor"`
-	Raw         string     `json:"Raw"`
-	OCIManifest struct {
-		SchemaVersion int    `json:"schemaVersion"`
-		MediaType     string `json:"mediaType"`
-		Config        struct {
-			MediaType string `json:"mediaType"`
-			Digest    string `json:"digest"`
-			Size      int    `json:"size"`
-		} `json:"config"`
-		Layers []struct {
-			MediaType   string `json:"mediaType"`
-			Digest      string `json:"digest"`
-			Size        int    `json:"size"`
-			Annotations struct {
-				PredicateType string `json:"in-toto.io/predicate-type"`
-			} `json:"annotations,omitempty"`
-		} `json:"layers"`
-	} `json:"OCIManifest"`
-}
-
-func getLatestDockerDigest(image string) (string, error) {
-	cmd := exec.Command("docker", "manifest", "inspect", image+":latest", "-v")
-	var out bytes.Buffer
-	cmd.Stdout = &out
-	if err := cmd.Run(); err != nil {
-		return "", fmt.Errorf("failed to inspect manifest: %v", err)
-	}
-
-	log.Printf("Manifest: %s", out.String())
-
-	var manifests []Manifest
-	if err := json.Unmarshal(out.Bytes(), &manifests); err != nil {
-		return "", fmt.Errorf("failed to unmarshal manifest: %v", err)
-	}
-
-	if len(manifests) > 0 {
-		return manifests[0].Descriptor.Digest, nil
-	}
-	return "", fmt.Errorf("no manifests found")
-}
-
-func getCurrentImageDigest(imageName string) (string, error) {
-	cmd := exec.Command("docker", "inspect", "--format={{json .RepoDigests}}", imageName)
+func getRemoteImageCreatedTime(imageName string) (time.Time, error) {
+	cmd := exec.Command("regctl", "image", "inspect", imageName, "--format", "{{.Created}}")
 	output, err := cmd.Output()
 	if err != nil {
-		return "", err
+		return time.Time{}, err
+	}
+	const layout = "2006-01-02 15:04:05.999999999 -0700 MST"
+
+	// 시간 문자열을 파싱
+	createdTime, err := time.Parse(layout, strings.TrimSpace(string(output)))
+	if err != nil {
+		fmt.Println("Error parsing time:", err)
+		return time.Time{}, err
 	}
 
+	return createdTime, nil
+}
+
+func getLocalImageCreatedTime(imageName string) (time.Time, error) {
+	cmd := exec.Command("docker", "inspect", "--format={{.Created}}", imageName)
+	output, err := cmd.Output()
+	if err != nil {
+		return time.Time{}, err
+	}
 	log.Printf("Inspect output: %s", output)
-	var repoDigests []string
-	if err := json.Unmarshal(output, &repoDigests); err != nil {
-		return "", fmt.Errorf("failed to unmarshal inspect data: %v", err)
+
+	// 출력된 시간 문자열 파싱
+	timeStr := strings.Trim(string(output), "'\n") // 작은 따옴표와 줄바꿈 문자 제거
+	createdTime, err := time.Parse(time.RFC3339, timeStr)
+	if err != nil {
+		return time.Time{}, fmt.Errorf("error parsing time: %v", err)
 	}
 
-	if len(repoDigests) > 0 {
-		parts := strings.Split(repoDigests[0], "@")
-		if len(parts) == 2 {
-			return strings.TrimSpace(parts[1]), nil
-		}
-	}
-
-	return "", fmt.Errorf("no digests found")
+	return createdTime, nil
 }
