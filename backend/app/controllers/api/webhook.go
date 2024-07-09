@@ -290,7 +290,7 @@ func HaveUpdateHandler() fiber.Handler {
 		}
 		log.Printf("Latest digest for %s: %s", imageName, latestDigest)
 
-		currentDigest, err := getCurrentImageDigest("vacation_promotion_" + serviceName)
+		currentDigest, err := getCurrentImageDigest(imageName)
 		if err != nil {
 			return err
 		}
@@ -357,22 +357,23 @@ func getLatestDockerDigest(image string) (string, error) {
 	return "", fmt.Errorf("no manifests found")
 }
 
-func getCurrentImageDigest(containerName string) (string, error) {
-	cmd := exec.Command("docker", "inspect", containerName)
+func getCurrentImageDigest(imageName string) (string, error) {
+	cmd := exec.Command("docker", "inspect", "--format='{{json .RepoDigests}}'", imageName)
 	output, err := cmd.Output()
 	if err != nil {
 		return "", err
 	}
 
-	var inspectData []struct {
-		Id string `json:"Id"`
-	}
-	if err := json.Unmarshal(output, &inspectData); err != nil {
+	var repoDigests []string
+	if err := json.Unmarshal(output, &repoDigests); err != nil {
 		return "", fmt.Errorf("failed to unmarshal inspect data: %v", err)
 	}
 
-	if len(inspectData) > 0 {
-		return strings.TrimSpace(inspectData[0].Id), nil
+	if len(repoDigests) > 0 {
+		parts := strings.Split(repoDigests[0], "@")
+		if len(parts) == 2 {
+			return strings.TrimSpace(parts[1]), nil
+		}
 	}
 
 	return "", fmt.Errorf("no digests found")
