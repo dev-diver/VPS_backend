@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
+	"regexp"
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
@@ -268,6 +269,66 @@ func dockerRequest(method, command string, jsonData []byte) error {
 	return nil
 }
 
+func CheckUpdateHandler() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+
+		serviceName := c.Query("service")
+		if serviceName == "" {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request"})
+		}
+
+		var imageName string
+		if serviceName == "server" {
+			imageName = "devdiver/vacation_promotion_server"
+		} else if serviceName == "client" {
+			imageName = "devdiver/vacation_promotion_client"
+		} else {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid service"})
+		}
+
+		cmd := exec.Command("docker", "run", "--rm",
+			"-v", "/var/run/docker.sock:/var/run/docker.sock",
+			"--name", "watchtower",
+			"containrrr/watchtower",
+			"--run-once",
+			"--monitor-only",
+			"--label-enable",
+			imageName)
+		output, err := cmd.CombinedOutput()
+		log.Printf("Output: %s", output)
+		if err != nil {
+			log.Printf("Error executing command: %v", err)
+			return c.Status(http.StatusInternalServerError).JSON(fiber.Map{
+				"status": "error",
+				"output": string(output),
+				"error":  err.Error(),
+			})
+		}
+
+		updateAvailable := parseWatchtowerOutput(string(output))
+		return c.JSON(fiber.Map{
+			"status":          "success",
+			"updateAvailable": updateAvailable,
+			"output":          string(output),
+		})
+	}
+}
+
+func parseWatchtowerOutput(output string) bool {
+	lines := strings.Split(output, "\n")
+	for _, line := range lines {
+		if strings.Contains(line, "Session done") {
+			re := regexp.MustCompile(`Failed=(\d+) Scanned=(\d+) Updated=(\d+) notify=(\w+)`)
+			matches := re.FindStringSubmatch(line)
+			if len(matches) == 5 {
+				updated := matches[3]
+				return updated != "0"
+			}
+		}
+	}
+	return false
+}
+
 func HaveUpdateHandler() fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		serviceName := c.Query("service")
@@ -297,9 +358,17 @@ func HaveUpdateHandler() fiber.Handler {
 		log.Printf("Current digest for %s: %s", serviceName, currentDigest)
 
 		if currentDigest != latestDigest {
-			return c.JSON(fiber.Map{"update": true})
+			return c.JSON(fiber.Map{
+				"update":  true,
+				"latest":  latestDigest,
+				"current": currentDigest,
+			})
 		} else {
-			return c.JSON(fiber.Map{"update": false})
+			return c.JSON(fiber.Map{
+				"update":  false,
+				"latest":  latestDigest,
+				"current": currentDigest,
+			})
 		}
 	}
 }
