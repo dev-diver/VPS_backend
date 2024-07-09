@@ -74,12 +74,12 @@ func getShell() string {
 
 func execCommand(command string, args ...string) error {
 	shell := getShell()
-	fullCommand := fmt.Sprintf("%s %s", command, args)
-	cmd := exec.Command(shell, "-c", fullCommand)
+	fullCommand := append([]string{command}, args...)
+	groupCommand := fmt.Sprintf("'%s'", strings.Join(fullCommand, " "))
+	cmd := exec.Command(shell, "-c", groupCommand)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
-	log.Printf("fullCommand: %v", fullCommand)
 	log.Printf("Running command: %v", cmd)
 
 	if err := cmd.Run(); err != nil {
