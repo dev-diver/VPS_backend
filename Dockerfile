@@ -21,7 +21,7 @@ RUN groupadd -f docker && usermod -aG docker root
 COPY /docker-compose.yml /vps_central/docker-compose.yml
 COPY /backend /vps_central
 
-WORKDIR /app/backend
+WORKDIR /vps_central
 # Go 모듈 정리
 RUN go mod tidy
 
