@@ -148,6 +148,12 @@ func clientRestartWithAPI() error {
 
 	client_container_name := "vacation_promotion_client"
 
+	//compose pull client
+	if err := imagePull("devdiver/" + client_container_name); err != nil {
+		log.Printf("Failed to pull client %v", err)
+		return err
+	}
+
 	//client stop
 	if err := dockerRequest("POST", fmt.Sprintf("/containers/%s/stop", client_container_name), nil); err != nil {
 		log.Printf("Failed to stop client container: %v", err)
@@ -156,12 +162,6 @@ func clientRestartWithAPI() error {
 	//client rm -f
 	if err := dockerRequest("DELETE", fmt.Sprintf("/containers/%s", client_container_name), nil); err != nil {
 		log.Printf("Failed to remove client container: %v", err)
-	}
-
-	//compose pull client
-	if err := imagePull("devdiver/" + client_container_name); err != nil {
-		log.Printf("Failed to pull client %v", err)
-		return err
 	}
 
 	//compose run -d client
