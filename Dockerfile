@@ -18,12 +18,15 @@ RUN apt-get update && apt-get install -y \
 
 RUN groupadd -f docker && usermod -aG docker root
 
-COPY /backend /vps_central
-COPY /docker-compose.yml /vps_central/docker-compose.yml
+COPY /backend/go.mod /vps_central/go.mod
+COPY /backend/go.sum /vps_central/go.sum
+# Go 모듈 정리
 
 WORKDIR /vps_central
-# Go 모듈 정리
 RUN go mod tidy
+
+COPY /backend /vps_central
+COPY /docker-compose.yml /vps_central/docker-compose.yml
 
 # 애플리케이션 빌드
 RUN go build -o server
