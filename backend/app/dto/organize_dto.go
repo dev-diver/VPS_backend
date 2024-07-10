@@ -17,7 +17,7 @@ type OrganizeResponse struct {
 func MapOrganizeToResponse(organize models.Organize) OrganizeResponse {
 	return OrganizeResponse{
 		ID:       organize.ID,
-		Name:     organize.Name,
+		Name:     "조직", //organize.Name, //조직도이름 테스트
 		ParentID: organize.ParentID,
 		Members:  MapMembersToDTO(organize.Members),
 	}
