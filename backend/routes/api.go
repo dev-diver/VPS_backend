@@ -8,8 +8,6 @@ import (
 )
 
 func RegisterAPI(apiRouter fiber.Router, db *database.Database) {
-	apiRouter.Post("/webhook", api.WebhookHandler())
-	apiRouter.Get("/have-update", api.HaveUpdateHandler())
 	registerAuth(apiRouter, db)
 	registerCompanies(apiRouter, db)
 	registerGroups(apiRouter, db)

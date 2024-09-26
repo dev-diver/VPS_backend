@@ -33,12 +33,13 @@ func GenerateJWT(authInfo *dto.LoginResponse) (string, error) {
 
 func SetJWTSecretKey() error {
 
-	err := godotenv.Load("./config/.env")
+	err := godotenv.Load()
 	if err != nil {
-		log.Fatalf("Error loading ./config/.env file: %v", err)
+		log.Fatalf("Error loading .env file: %v", err)
 	}
 
 	secret := os.Getenv("JWT_SECRET")
+	print("secret:", secret)
 	jwtKey = []byte(secret)
 	return nil
 }

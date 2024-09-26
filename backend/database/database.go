@@ -16,16 +16,16 @@ type Database struct {
 
 func InitDB() (*Database, error) {
 
-	err := godotenv.Load("./database/.env")
+	err := godotenv.Load()
 	if err != nil {
-		log.Fatalf("Error loading ./databse/.env file: %v", err)
+		log.Fatalf("Error loading .env file: %v", err)
 	}
 
-	dbUser := os.Getenv("DATABASE_USER")
-	dbPassword := os.Getenv("DATABASE_PASSWORD")
-	dbHost := os.Getenv("DATABASE_HOST")
-	dbPort := os.Getenv("DATABASE_PORT")
-	dbName := os.Getenv("DATABASE_NAME")
+	dbUser := os.Getenv("DB_USER")
+	dbPassword := os.Getenv("DB_PASS")
+	dbHost := os.Getenv("DB_HOST")
+	dbPort := os.Getenv("DB_PORT")
+	dbName := os.Getenv("DB_NAME")
 	fmt.Println("dbUser:", dbUser, "dbPassword:", dbPassword, "dbHost:", dbHost, "dbPort:", dbPort, "dbName:", dbName)
 
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local",
