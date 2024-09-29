@@ -35,11 +35,14 @@ func SetJWTSecretKey() error {
 
 	err := godotenv.Load()
 	if err != nil {
-		log.Fatalf("Error loading .env file: %v", err)
+		log.Printf(".env 파일을 찾을 수 없습니다. 시스템 환경 변수를 사용합니다.")
 	}
 
 	secret := os.Getenv("JWT_SECRET")
 	print("secret:", secret)
+	if secret == "" {
+		return fmt.Errorf("JWT_SECRET 환경 변수를 설정해주세요")
+	}
 	jwtKey = []byte(secret)
 	return nil
 }
