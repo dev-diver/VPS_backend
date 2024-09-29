@@ -8,6 +8,8 @@ import (
 )
 
 func RegisterAPI(apiRouter fiber.Router, db *database.Database) {
+	apiRouter.Post("/update", api.UpdateHandler())
+	apiRouter.Get("/have-update", api.HaveUpdateHandler())
 	registerAuth(apiRouter, db)
 	registerCompanies(apiRouter, db)
 	registerGroups(apiRouter, db)
