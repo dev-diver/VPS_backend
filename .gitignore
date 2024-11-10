@@ -1,3 +1,5 @@
 dist/*/**
 *.cnf
 server
+
+.DS_Store

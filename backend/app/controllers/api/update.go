@@ -3,7 +3,9 @@ package api
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"os/exec"
@@ -40,10 +42,16 @@ func UpdateHandler() fiber.Handler {
 
 		if imageName := webhookData.Repository.RepoName; imageName == "devdiver/vacation_promotion_client" {
 			log.Println("Sending update request for client...")
-			sendUpdateRequest("client")
+			if err := sendUpdateRequest("client"); err != nil {
+				log.Printf("Error updating client: %v", err)
+				return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+			}
 		} else if imageName == "devdiver/vacation_promotion_server" {
 			log.Println("Sending update request for server...")
-			sendUpdateRequest("server")
+			if err := sendUpdateRequest("server"); err != nil {
+				log.Printf("Error updating server: %v", err)
+				return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+			}
 		} else {
 			log.Printf("Unknown repository: %s", webhookData.Repository.RepoName)
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid repository"})
@@ -53,7 +61,7 @@ func UpdateHandler() fiber.Handler {
 	}
 }
 
-func sendUpdateRequest(serviceName string) {
+func sendUpdateRequest(serviceName string) error {
 	url := "http://update-server:5000/update"
 
 	postData := map[string]string{
@@ -61,20 +69,26 @@ func sendUpdateRequest(serviceName string) {
 	}
 	jsonData, err := json.Marshal(postData)
 	if err != nil {
-		log.Fatalf("Error marshalling JSON: %v", err)
+		return errors.New("error marshalling JSON: " + err.Error())
 	}
 
 	resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonData))
 	if err != nil {
-		log.Fatalf("Error sending update request: %v", err)
+		return errors.New("error sending update request: " + err.Error())
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode == http.StatusOK {
-		log.Printf("%s service update triggered successfully", serviceName)
-	} else {
-		log.Printf("Failed to update %s service. Status: %s", serviceName, resp.Status)
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return errors.New("error reading response body: " + err.Error())
 	}
+
+	if resp.StatusCode != http.StatusOK {
+		return errors.New("failed to update " + serviceName + ": " + string(body))
+	}
+
+	log.Printf("%s service update triggered successfully", serviceName)
+	return nil
 }
 
 func HaveUpdateHandler() fiber.Handler {
