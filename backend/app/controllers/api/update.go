@@ -88,6 +88,7 @@ func sendUpdateRequest(serviceName string) error {
 	}
 
 	log.Printf("%s service update triggered successfully", serviceName)
+	log.Printf("message: %s", body)
 	return nil
 }
 
